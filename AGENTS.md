@@ -19,3 +19,10 @@ Operating rules during bootstrap:
 - **Commit Style Enforcement** – All commits that introduce a *significant feature* or a *bug fix* must conform to the Commitizen spec (e.g., `feat:` for features, `fix:` for bug fixes). Enforce via a pre‑commit hook (`cz check`) or CI validation.
 
 After `build.00` completes, replace this file with the canonical AGENTS.md it generates.
+# Commit & Pull‑Request Policy
+
+- All commits that introduce a **significant feature** or a **bug‑fix** must follow the **Commitizen** convention (e.g., `feat:`, `fix:`, `chore:`, etc.) and include a concise, descriptive subject line.
+- PR titles should mirror the commit subject and reference the relevant skill or build‑plan step, e.g., `feat: orchestrator + telemetry + intent‑collect`.
+- When the GitHub CLI (`gh`) is configured in the repository, PRs are created automatically via `gh pr create`. Otherwise, a reminder comment with the PR title and body will be left for the developer to open manually.
+- The `AGENTS.md` file serves as the single source of truth for these conventions; any deviation should be opened as a GitHub issue and addressed with a dedicated “trace‑skill” in a later iteration.
+
