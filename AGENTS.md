@@ -16,4 +16,6 @@ Operating rules during bootstrap:
 - Stop at any `HITL GATE` in the build-plan step until I approve.
 - `git` is the source of truth. No state lives outside the repo.
 
+- **Commit Style Enforcement** – All commits that introduce a *significant feature* or a *bug fix* must conform to the Commitizen spec (e.g., `feat:` for features, `fix:` for bug fixes). Enforce via a pre‑commit hook (`cz check`) or CI validation.
+
 After `build.00` completes, replace this file with the canonical AGENTS.md it generates.
