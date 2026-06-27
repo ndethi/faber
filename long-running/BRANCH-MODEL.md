@@ -57,3 +57,4 @@ git push origin --tags
 - Per-PR reviews can be lighter — failing in `dev` is recoverable.
 - Promotion reviews are the production gate — apply the most scrutiny here. Look at the *cumulative diff* `git log main..dev` since the last promotion, not just the latest PR.
 - Tagging promotions makes rollback to a known-good production state trivial: `git reset --hard <tag>`. - branch model
+# Updated via HERMES brief sync on 2026-06-27 18:35:18 UTC
