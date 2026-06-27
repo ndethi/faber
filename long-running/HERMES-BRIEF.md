@@ -353,3 +353,4 @@ Hermes runs on a leash:
 The first artifact Hermes produces is **`runs/hermes/state-report.md`** — a read-only audit of where the repo actually is. Read that first; *then* decide which gap it should close first. Don't let it self-prioritise.
 
 If Hermes violates a §1 constraint, that's a framework bug — append to `framework/lessons.md`, patch `AGENTS.md` or the relevant skill, start the next phase fresh on a new branch. Don't argue the agent into compliance; argue the *rules* into more clarity.
+# Updated via HERMES brief sync on 2026-06-27 18:35:05 UTC
