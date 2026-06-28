@@ -1,0 +1,19 @@
+{
+  "phase": "A*",
+  "iteration": 1,
+  "last_commit_sha": "f0c4921",
+  "last_session_id": "session_20260629_005213_6fc9ce58",
+  "judge_scores": {
+    "spec_conformance": 0.0,
+    "claim_integrity": 0.0,
+    "design_coherence": 0.0,
+    "narrative_fit": 0.0,
+    "drift_signal": 0.0
+  },
+  "composite": 0.0,
+  "previous_composite": 0.0,
+  "delta": 0.0,
+  "open_prs": ["https://github.com/ndethi/faber/pull/7"],
+  "backlog_count": 10,
+  "updated": "2026-06-29T01:22:00Z"
+}
