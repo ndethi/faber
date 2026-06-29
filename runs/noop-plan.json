@@ -1,0 +1,10 @@
+{
+  "run_id": "noop-test-001",
+  "strictness": "ordered",
+  "expected_trajectory": [
+    { "skill_id": "noop", "checkpoint": "start", "gate": false }
+  ],
+  "skills": [
+    { "skill_id": "noop", "component": "", "options": {} }
+  ]
+}

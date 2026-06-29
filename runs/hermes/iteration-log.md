@@ -40,3 +40,23 @@
 - **Result:** ✓ SKILL.md updated with Astro + Cloudflare Pages defaults; ✓ build.py implements Astro build wrapper with package.json check; ✓ test_build.py passes 6/6 tests (pytest + direct); ✓ BG-002 marked done
 - **Diff:** ~120 lines added across SKILL.md, build.py, test_build.py
 - **Next:** Iteration 3 — Orchestrator + telemetry (BG-003) and/or intent-collect skill (build.01-core)
+
+---
+## Iteration 3 — 2026-06-29T02:00:00Z
+**Action:** Orchestrator + telemetry (BG-003)
+- **Spec reference:** build-plan/build-plan/build.01-core.md; FRAMEWORK.md §4-5; HERMES-BRIEF §7
+- **Plan:**
+  1. Extend `runs/telemetry.schema.json` with trajectory fields (expected vs actual trajectory, strictness)
+  2. Implement `orchestrator/orchestrator.py`: reads run plan (ordered skill list + strictness), invokes skills sequentially, writes `runs/<id>/telemetry.json` against schema
+  3. Add no-op run plan to prove orchestrator works
+  4. Add eval for orchestrator (run no-op plan → validate telemetry output)
+- **Expected diff:** ~150-200 lines across schema + orchestrator + run plan + eval
+- **Branch:** hermes/orchestrator-telemetry
+- **PR target:** dev (referencing skill.orchestrator@1.0.0 when registry entry created)
+- **Constraint:** Per build.01-core acceptance: orchestrator runs no-op plan and writes valid telemetry
+- **Result:** ✓ telemetry.schema.json extended with expected_trajectory + trajectory_strictness; ✓ orchestrator/orchestrator.py implements plan execution + telemetry writing; ✓ runs/noop-plan.json no-op plan; ✓ orchestrator/evals/test_orchestrator.py passes 7/7 tests; ✓ BG-003 marked done
+- **Diff:** ~200 lines added across schema, orchestrator.py, noop-plan.json, test_orchestrator.py, noop skill
+- **Next:** Iteration 4 — intent-collect skill (build.01-core) or remaining HIGH priority items
+- **Result:** ✓ telemetry.schema.json extended with expected_trajectory + trajectory_strictness fields; ✓ orchestrator/orchestrator.py implemented with skill invocation + telemetry writing; ✓ runs/noop-plan.json created as no-op proof; ✓ orchestrator/evals/test_orchestrator.py passes 7/7 tests (pytest); ✓ orchestrator runs no-op plan and writes valid telemetry with trajectory fields; ✓ telemetry validates against schema
+- **Diff:** ~250 lines added across schema, orchestrator, noop-plan, eval
+- **Next:** Iteration 4 — intent-collect skill (build.01-core) and/or trajectory-guard skill
