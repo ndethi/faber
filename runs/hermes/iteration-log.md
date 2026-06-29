@@ -42,18 +42,24 @@
 - **Next:** Iteration 3 — Orchestrator + telemetry (BG-003) and/or intent-collect skill (build.01-core)
 
 ---
-## Iteration 3 — 2026-06-29T02:00:00Z
-**Action:** Orchestrator + telemetry (BG-003)
-- **Spec reference:** build-plan/build-plan/build.01-core.md; FRAMEWORK.md §4-5; HERMES-BRIEF §7
-- **Plan:**
-  1. Extend `runs/telemetry.schema.json` with trajectory fields (expected vs actual trajectory, strictness)
-  2. Implement `orchestrator/orchestrator.py`: reads run plan (ordered skill list + strictness), invokes skills sequentially, writes `runs/<id>/telemetry.json` against schema
-  3. Add no-op run plan to prove orchestrator works
-  4. Add eval for orchestrator (run no-op plan → validate telemetry output)
-- **Expected diff:** ~150-200 lines across schema + orchestrator + run plan + eval
-- **Branch:** hermes/orchestrator-telemetry
-- **PR target:** dev (referencing skill.orchestrator@1.0.0 when registry entry created)
-- **Constraint:** Per build.01-core acceptance: orchestrator runs no-op plan and writes valid telemetry
+## Iteration 4 — 2026-06-29T18:00:00Z (planned, parallel)
+**Action:** BG-004 (intent-collect) + BG-011 (pr-review-resolution) — parallel via subagents
+- **Spec references:** build.01-core (intent-collect); FRAMEWORK.md §1, §2, §7 (skill contract, cross-cutting, self-extension)
+- **Subagent 1 (BG-004):** Build `intent-collect` skill per `skill.intent-collector@1.0.0` registry — emits spec.md, trajectory.md, scope-baseline.md; eval on fixtures/rohaki
+- **Subagent 2 (BG-011):** Build `pr-review-resolution` skill:
+  1. `fetch_comments.py` — gh API (no email)
+  2. `categorize.py` — deterministic regex/heuristics (style, docs, security, test, logic, design)
+  3. `resolve.py` — auto-fix (ruff/prettier), LLM patch for logic/design, defer unknown
+  4. `apply_fixes.py` — git commit, push to hermes/<topic>
+  5. `update_pr.py` — gh pr comment with fix SHA, resolve conversation
+  6. `notify.py` — Telegram via Hermes gateway
+  7. `analyze.py` — historical pattern analysis (read-only)
+  8. Evals: mock fixtures, categorization accuracy, fix compilation, integration
+- **Dependencies:** orchestrator (local, from BG-003), gh auth, Hermes gateway
+- **HITL:** Configurable gate before push (default true)
+- **Branch:** hermes/pr-review-resolution (this branch)
+- **PR target:** dev (skill.pr-review-resolution@1.0.0)
+- **Constraint:** Per AGENTS.md §2.7 — no autonomous skill creation; manual PR with eval
 - **Result:** ✓ telemetry.schema.json extended with expected_trajectory + trajectory_strictness; ✓ orchestrator/orchestrator.py implements plan execution + telemetry writing; ✓ runs/noop-plan.json no-op plan; ✓ orchestrator/evals/test_orchestrator.py passes 7/7 tests; ✓ BG-003 marked done
 - **Diff:** ~200 lines added across schema, orchestrator.py, noop-plan.json, test_orchestrator.py, noop skill
 - **Next:** Iteration 4 — intent-collect skill (build.01-core) or remaining HIGH priority items
