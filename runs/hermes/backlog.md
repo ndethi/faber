@@ -8,7 +8,7 @@
 |----|--------|------|----------|--------|
 | BG-001 | State Report + §7 | **AGENTS.md swap to canonical** — replace bootstrap constitution with canonical version, preserving human's Commitizen + PR-policy additions | HIGH | done (PR #7 merged) |
 | BG-002 | State Report + §7 | **skills/build/ correction** — align SKILL.md to FRAMEWORK §8 (Astro + Cloudflare Pages default); add scripts/; add evals/ with passing test | HIGH | done (PR #8 merged) |
-| BG-003 | State Report | **Orchestrator + telemetry** — orchestrator/ exists? runs/telemetry.schema.json has trajectory fields? | HIGH | done |
+| BG-003 | State Report | **Orchestrator + telemetry** — orchestrator/ exists? runs/telemetry.schema.json has trajectory fields? | HIGH | done (PR #9 open) |
 
 ## Medium Priority
 
