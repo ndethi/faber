@@ -19,6 +19,7 @@
 | BG-006 | State Report | **_inbox/ and build-plan/** — persisted from v0.2 bundle or amend build.00 acceptance | MEDIUM | open |
 | BG-007 | State Report | **CI workflow** — per build-plan/build.02 once enough skills exist | MEDIUM | open |
 | BG-008 | State Report | **Client portal** — per app.client-portal@0.1.0 once skills + CI stable | MEDIUM | open |
+| BG-011 | User Request | **PR Review Resolution Skill** — fetch Copilot/GH review comments via email/gh API, systematically resolve each comment, push fixes, update PR | MEDIUM | open |
 
 ## Low Priority / Tracking
 
