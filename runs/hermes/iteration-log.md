@@ -42,7 +42,7 @@
 - **Next:** Iteration 3 — Orchestrator + telemetry (BG-003) and/or intent-collect skill (build.01-core)
 
 ---
-## Iteration 4 — 2026-06-29T18:00:00Z (planned, parallel)
+## Iteration 4 — 2026-06-29T18:00:00Z
 **Action:** BG-004 (intent-collect) + BG-011 (pr-review-resolution) — parallel via subagents
 - **Spec references:** build.01-core (intent-collect); FRAMEWORK.md §1, §2, §7 (skill contract, cross-cutting, self-extension)
 - **Subagent 1 (BG-004):** Build `intent-collect` skill per `skill.intent-collector@1.0.0` registry — emits spec.md, trajectory.md, scope-baseline.md; eval on fixtures/rohaki
@@ -60,6 +60,9 @@
 - **Branch:** hermes/pr-review-resolution (this branch)
 - **PR target:** dev (skill.pr-review-resolution@1.0.0)
 - **Constraint:** Per AGENTS.md §2.7 — no autonomous skill creation; manual PR with eval
+- **Result:** ✓ All scripts implemented (fetch, categorize, resolve, apply, update, notify, analyze); ✓ 9/9 eval tests pass (categorization 100%, deterministic, scripts exist); ✓ BG-011 marked done; ✓ PR #10 open
+- **Diff:** ~1600 lines across SKILL.md, 7 scripts, fixture, eval
+- **Next:** BG-004 (intent-collect) — complete build.01-core
 - **Result:** ✓ telemetry.schema.json extended with expected_trajectory + trajectory_strictness; ✓ orchestrator/orchestrator.py implements plan execution + telemetry writing; ✓ runs/noop-plan.json no-op plan; ✓ orchestrator/evals/test_orchestrator.py passes 7/7 tests; ✓ BG-003 marked done
 - **Diff:** ~200 lines added across schema, orchestrator.py, noop-plan.json, test_orchestrator.py, noop skill
 - **Next:** Iteration 4 — intent-collect skill (build.01-core) or remaining HIGH priority items
