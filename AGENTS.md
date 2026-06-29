@@ -1,62 +1,162 @@
-# EXPEDITED BOOTSTRAP – DO NOT MERGE TO MAIN
+# AGENTS.md — Faber Framework Constitution (Canonical)
 
-# AGENTS.md (bootstrap-stage constitution)
+You are building the **Faber** agentic web framework into this repo. This constitution governs all work — human, agent, or hybrid.
 
-You are building the Faber framework into this repo. Read these files before acting:
-1. `_inbox/FRAMEWORK.md`  — design source of truth
-2. `_inbox/INTERFACE.md`  — interface decision
-3. `_inbox/IDENTITY.md`   — naming
-4. `_inbox/prompts/`      — registry + entries
-5. `_inbox/build-plan/`   — ordered build steps
+---
 
-Operating rules during bootstrap:
-- The build-plan step referenced in the user's prompt is the spec for this turn. Execute it exactly.
-- **Plan before edit.** Show the plan and wait for approval before any file write.
-- **Persist `_inbox/` files byte-for-byte** in `build.00`. Never regenerate canonical artifacts.
-- One build step at a time. For multi-skill steps, build one skill at a time with its own `/diff`, commit, and PR.
-- Reference the registry `id@version` in every PR.
-- **HITL gates disabled for expedited bootstrap**
-- `git` is the source of truth. No state lives outside the repo.
+## 1. Design Authority
 
-- **Commit Style Enforcement** – All commits that introduce a *significant feature* or a *bug fix* must conform to the Commitizen spec (e.g., `feat:` for features, `fix:` for bug fixes). Enforce via a pre‑commit hook (`cz check`) or CI validation.
+- **FRAMEWORK.md** is the design source of truth (architecture, invariants, skill contracts).
+- **AGENTS.md** is the process constitution (rules, gates, definitions of done).
+- When they disagree on *design*, FRAMEWORK.md wins. Open a PR fixing AGENTS.md first; do not silently follow the weaker one.
 
-After `build.00` completes, replace this file with the canonical AGENTS.md it generates.
-# Commit & Pull‑Request Policy
+---
 
-- All commits that introduce a **significant feature** or a **bug‑fix** must follow the **Commitizen** convention (e.g., `feat:`, `fix:`, `chore:`, etc.) and include a concise, descriptive subject line.
-- PR titles should mirror the commit subject and reference the relevant skill or build‑plan step, e.g., `feat: orchestrator + telemetry + intent‑collect`.
-- When the GitHub CLI (`gh`) is configured in the repository, PRs are created automatically via `gh pr create`. Otherwise, a reminder comment with the PR title and body will be left for the developer to open manually.
-- The `AGENTS.md` file serves as the single source of truth for these conventions; any deviation should be opened as a GitHub issue and addressed with a dedicated “trace‑skill” in a later iteration.
+## 2. Operating Rules
 
-# Commit & Pull‑Request Policy (expedited)
+### 2.1 Git is the source of truth
+No state lives outside the repo. All artifacts (specs, trajectories, telemetry, evals, skills, portal data) are committed files.
 
-- This PR is temporary and will be squashed or removed after the MVP is verified.
+### 2.2 Branch model (per BRANCH-MODEL.md)
+- `main` — production. **Never push here.** Promotion = human-merged `dev → main` PR.
+- `dev` — integration. **Never commit directly.** All changes flow via PRs from `hermes/<topic>` branches.
+- `hermes/<topic>` — your working branches. One logical change per branch, one PR per branch, base **always `dev`**.
+- `hermes/brief` — holds `long-running/HERMES-BRIEF.md`; updated only via PR.
 
+### 2.3 PR discipline
+- Every PR targets `dev`. Human reviews and merges.
+- PR title mirrors the commit subject; references the registry `id@version` when applicable.
+- Use `gh pr create --base dev` (configured in this repo).
 
+### 2.4 Commit style (Commitizen)
+All significant commits follow Conventional Commits:
+```
+feat:   new capability
+fix:    bug fix
+chore:  maintenance, tooling, docs
+refactor: code change without behavior change
+test:   test additions or fixes
+```
+Enforced via pre-commit hook (`cz check`) and CI validation.
 
-You are building the Faber framework into this repo. Read these files before acting:
-1. `_inbox/FRAMEWORK.md`  — design source of truth
-2. `_inbox/INTERFACE.md`  — interface decision
-3. `_inbox/IDENTITY.md`   — naming
-4. `_inbox/prompts/`      — registry + entries
-5. `_inbox/build-plan/`   — ordered build steps
+### 2.5 Plan before edit
+For any non-trivial change: write a 3–5 line plan into `runs/hermes/iteration-log.md` *before* editing. State the spec reference (FRAMEWORK §X / skill name / SPEC-ID), expected diff size.
 
-Operating rules during bootstrap:
-- The build-plan step referenced in the user's prompt is the spec for this turn. Execute it exactly.
-- **Plan before edit.** Show the plan and wait for approval before any file write.
-- **Persist `_inbox/` files byte-for-byte** in `build.00`. Never regenerate canonical artifacts.
-- One build step at a time. For multi-skill steps, build one skill at a time with its own `/diff`, commit, and PR.
-- Reference the registry `id@version` in every PR.
-- Stop at any `HITL GATE` in the build-plan step until I approve.
-- `git` is the source of truth. No state lives outside the repo.
+### 2.6 HITL gates (human-in-the-loop)
+Specified per skill/build step in FRAMEWORK.md and registry entries. A gate means: **PR opened → human reviews → human merges**. No auto-merge past a gate.
 
-- **Commit Style Enforcement** – All commits that introduce a *significant feature* or a *bug fix* must conform to the Commitizen spec (e.g., `feat:` for features, `fix:` for bug fixes). Enforce via a pre‑commit hook (`cz check`) or CI validation.
+### 2.7 No autonomous skill creation
+Hermes's profile-level skill extraction is disabled. All skills authored via Faber's `skill-author` meta-skill (once it exists) or manual PR. Every skill requires an eval.
 
-After `build.00` completes, replace this file with the canonical AGENTS.md it generates.
-# Commit & Pull‑Request Policy
+### 2.8 Executable acceptance > LLM judge
+Lighthouse, axe, link-check, claim-substantiation, token-lint, trajectory-guard conformance — deterministic checks are the gate. The judge only evaluates what deterministic checks cannot.
 
-- All commits that introduce a **significant feature** or a **bug‑fix** must follow the **Commitizen** convention (e.g., `feat:`, `fix:`, `chore:`, etc.) and include a concise, descriptive subject line.
-- PR titles should mirror the commit subject and reference the relevant skill or build‑plan step, e.g., `feat: orchestrator + telemetry + intent‑collect`.
-- When the GitHub CLI (`gh`) is configured in the repository, PRs are created automatically via `gh pr create`. Otherwise, a reminder comment with the PR title and body will be left for the developer to open manually.
-- The `AGENTS.md` file serves as the single source of truth for these conventions; any deviation should be opened as a GitHub issue and addressed with a dedicated “trace‑skill” in a later iteration.
+### 2.9 No fabrication
+Unknown facts, sources, or capabilities = `TODO:` in the artifact + Telegram surface. Never invent.
 
+### 2.10 Respect `/stop`
+On `/stop` (TUI or Telegram gateway): halt cleanly, post one-line status to Telegram, exit loop.
+
+---
+
+## 3. Skill Contract (per FRAMEWORK.md §1)
+
+Every skill at `skills/<name>/` contains:
+- `SKILL.md` — YAML frontmatter (`name`, `description`, `version`, `author`, `license`, `tags`) + markdown body
+- `scripts/` — deterministic code (Python/Node) that does the actual work; model only orchestrates
+- `evals/` — **hard requirement**: automated test proving the skill meets its acceptance criteria
+- `references/` — load-on-demand docs (optional)
+- `assets/` — templates (optional)
+
+**No skill ships without a passing eval.** (FRAMEWORK.md §1, hard rule)
+
+---
+
+## 4. Lifecycle & Cross-Cutting Skills (FRAMEWORK.md §2)
+
+| Category | Skills |
+|----------|--------|
+| Lifecycle | `intent-collect`, `scaffold`, `build`, `evaluate`, `deploy`, `publish`, `observe`, `feedback` |
+| Cross-cutting | `trajectory-guard`, `model-route`, `scope-ledger`, `dashboard` |
+| Meta | `skill-author` |
+
+An **orchestrator** (`orchestrator/`) sequences lifecycle skills per a run plan; cross-cutting skills wrap every run.
+
+---
+
+## 5. Definitions of Done
+
+### Skill-level
+- `SKILL.md` + `scripts/` + `evals/` present
+- Eval passes (`python -m pytest skills/<name>/evals/`)
+- Registry entry in `_registry.md` with `status: active`
+
+### Build-step level (per build-plan)
+- All skills in step complete per above
+- Acceptance criteria in build-plan satisfied
+- HITL gate cleared (human merged PR)
+
+### Phase A* Equilibrium (per HERMES-BRIEF.md §2)
+All 9 conditions hold simultaneously — see brief for full list.
+
+---
+
+## 6. Telemetry & Observability
+
+- **Telemetry schema**: `runs/telemetry.schema.json` — run id, ordered skills invoked (actual trajectory), tokens+cost, model used, eval scores, deploy status, timestamps.
+- **Trajectory conformance**: `trajectory-guard` diffs expected (`trajectory.md`) vs actual (telemetry); emits report with `exact`/`ordered`/`partial` strictness.
+- **Dashboard**: `dashboard` skill generates `dashboard/index.html` from telemetry; CI uploads as artifact.
+
+---
+
+## 7. Post-Deploy Feedback Loop (FRAMEWORK.md §6)
+
+```
+observe (RUM/CWV · analytics · errors · uptime · link-monitor · client feedback)
+  → triage   (classify: bug | regression | new-request | spec-gap)
+  → propose  (PR: code fix | spec delta | new eval | new skill)
+  → HITL     (dev approves)
+  → build    (re-enter lifecycle)
+  → verify   (acceptance + trajectory conformance)
+```
+
+Client feedback → extended-scope ledger items (never lost in chat).
+
+---
+
+## 8. Self-Extension (FRAMEWORK.md §7)
+
+`skill-author` meta-skill governs new skills:
+1. Trigger: recurring pattern in `lessons.md`/feedback or capability gap
+2. Dedup search → draft `SKILL.md` + `scripts/` + **eval**
+3. Run eval → open PR with rationale + results
+4. HITL gate (dev reviews)
+5. Promotion `client-scoped → framework-scoped` = second PR/gate
+
+**Hard rules:** no skill without eval; no skill without dedup search. Agent proposes, dev disposes.
+
+---
+
+## 9. Cost & Commercial Layer (FRAMEWORK.md §8–9)
+
+- `model-route` picks local vs frontier per step; continuous local-vs-frontier evals gate graduation.
+- `scope-ledger`: baseline scope (from intent) + extended-scope items with estimated agent cost + dev IP attribution.
+- Dashboard surfaces cost per run/skill, routing decisions, scope ledger.
+
+---
+
+## 10. Reference Files (read at session start)
+
+```
+@AGENTS.md
+@README.md
+@FRAMEWORK.md
+@long-running/HERMES-BRIEF.md
+@long-running/BRANCH-MODEL.md
+@runs/hermes/STATE.json
+@runs/hermes/backlog.md
+```
+
+---
+
+*Canonical version. Supersedes the expedited bootstrap AGENTS.md. Human Commitizen + PR-policy additions preserved per HERMES-BRIEF.md §7 item 1.*
