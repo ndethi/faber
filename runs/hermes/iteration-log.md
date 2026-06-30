@@ -87,7 +87,7 @@
   - Per AGENTS.md §2.7: no autonomous skill creation → manual PR (skill-author not yet built)
   - Per FRAMEWORK.md §1: must have evals
   - HITL gate: human reviews generated fixes before push (configurable)
-- **Expected diff:** ~300000-400 lines across SKILL.md, 4-5 scripts, evals, registry entry
+- **Expected diff:** ~300-400 lines across SKILL.md, 4-5 scripts, evals, registry entry
 - **Branch:** hermes/pr-review-resolution
 - **Priority:** MEDIUM (after BG-004 intent-collect, or parallel if subagent)
 - **Related:** Enables automated PR iteration loop; integrates with orchestrator + trajectory-guard

@@ -4,7 +4,6 @@ No-op skill for orchestrator testing.
 Exits successfully with a simple message.
 """
 import json
-import sys
 
 
 def main():

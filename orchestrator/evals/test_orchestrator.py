@@ -139,43 +139,61 @@ def test_telemetry_validates_against_schema():
 
 def test_orchestrator_deterministic():
     """Test that two runs with same plan produce same structure (deterministic)."""
-    # Run twice
-    result1 = subprocess.run(
-        [sys.executable, "orchestrator/orchestrator.py", "runs/noop-plan.json"],
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    result2 = subprocess.run(
-        [sys.executable, "orchestrator/orchestrator.py", "runs/noop-plan.json"],
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
+    # Use temp output dirs to avoid overwriting
+    with tempfile.TemporaryDirectory() as tmpdir1, tempfile.TemporaryDirectory() as tmpdir2:
+        # Copy noop-plan.json to temp dirs with unique run_ids
+        with open("runs/noop-plan.json") as f:
+            plan = json.load(f)
+        
+        plan1 = plan.copy()
+        plan1["run_id"] = "noop-test-deterministic-1"
+        plan_path1 = Path(tmpdir1) / "noop-plan-1.json"
+        plan_path1.write_text(json.dumps(plan1))
+        
+        plan2 = plan.copy()
+        plan2["run_id"] = "noop-test-deterministic-2"
+        plan_path2 = Path(tmpdir2) / "noop-plan-2.json"
+        plan_path2.write_text(json.dumps(plan2))
 
-    assert result1.returncode == 0
-    assert result2.returncode == 0
+        # Run twice with different output dirs
+        result1 = subprocess.run(
+            [sys.executable, "orchestrator/orchestrator.py", str(plan_path1)],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            cwd=Path.cwd(),
+        )
+        result2 = subprocess.run(
+            [sys.executable, "orchestrator/orchestrator.py", str(plan_path2)],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            cwd=Path.cwd(),
+        )
 
-    out1 = json.loads(result1.stdout.strip())
-    out2 = json.loads(result2.stdout.strip())
+        assert result1.returncode == 0
+        assert result2.returncode == 0
 
-    # Telemetry files should have same structure
-    with open(out1["telemetry_path"]) as f:
-        t1 = json.load(f)
-    with open(out2["telemetry_path"]) as f:
-        t2 = json.load(f)
+        out1 = json.loads(result1.stdout.strip())
+        out2 = json.loads(result2.stdout.strip())
 
-    # Same structure (run_id will differ, but skills array structure same)
-    assert len(t1["skills"]) == len(t2["skills"]), "Same number of skills"
-    for s1, s2 in zip(t1["skills"], t2["skills"]):
-        assert s1["skill_id"] == s2["skill_id"]
-        assert s1["status"] == s2["status"]
+        # Telemetry files should have same structure
+        with open(out1["telemetry_path"]) as f:
+            t1 = json.load(f)
+        with open(out2["telemetry_path"]) as f:
+            t2 = json.load(f)
 
-    assert t1["expected_trajectory"] == t2["expected_trajectory"]
-    assert t1["trajectory_strictness"] == t2["trajectory_strictness"]
-    assert t1["model"] == t2["model"]
+        # Same structure (run_id will differ, but skills array structure same)
+        assert len(t1["skills"]) == len(t2["skills"]), "Same number of skills"
+        for s1, s2 in zip(t1["skills"], t2["skills"]):
+            assert s1["skill_id"] == s2["skill_id"]
+            assert s1["status"] == s2["status"]
 
-    print("✓ Orchestrator produces deterministic structure for same input")
+        assert t1["expected_trajectory"] == t2["expected_trajectory"]
+        assert t1["trajectory_strictness"] == t2["trajectory_strictness"]
+        assert t1["model"] == t2["model"]
+
+        print("✓ Orchestrator produces deterministic structure for same input")
 
 
 def test_schema_has_trajectory_fields():

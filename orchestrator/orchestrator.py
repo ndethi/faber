@@ -31,6 +31,12 @@ class Orchestrator:
         if "skills" not in plan:
             raise ValueError("Run plan must contain 'skills' array")
 
+        # Validate each step has a valid skill_id
+        for i, step in enumerate(plan["skills"]):
+            skill_id = step.get("skill_id")
+            if not skill_id or not isinstance(skill_id, str) or not skill_id.strip():
+                raise ValueError(f"Step {i} must have a non-empty string 'skill_id'")
+
         return plan
 
     def validate_telemetry(self, telemetry: Dict) -> bool:
@@ -67,7 +73,7 @@ class Orchestrator:
         if not script_rel:
             return {
                 "skill_id": skill_id,
-                "status": "skipped",
+                "status": "failure",
                 "duration_ms": 0,
                 "error": f"No script mapped for skill: {skill_id}",
             }
@@ -76,7 +82,7 @@ class Orchestrator:
         if not script_path.exists():
             return {
                 "skill_id": skill_id,
-                "status": "skipped",
+                "status": "failure",
                 "duration_ms": 0,
                 "error": f"Script not found: {script_rel}",
             }
@@ -87,8 +93,13 @@ class Orchestrator:
             cmd.append(component)
         if options:
             for k, v in options.items():
-                if isinstance(v, bool) and v:
+                if isinstance(v, bool):
+                    if v:
+                        cmd.append(f"--{k.replace('_', '-')}")
+                else:
+                    # Non-boolean values: pass as --key value
                     cmd.append(f"--{k.replace('_', '-')}")
+                    cmd.append(str(v))
 
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
