@@ -32,7 +32,7 @@ def fetch_pr_comments(pr_number: int, repo: str) -> List[ReviewComment]:
         "gh", "api",
         f"/repos/{repo}/pulls/{pr_number}/comments",
         "--paginate",
-        "-q", "[.[] | {id: .id, body: .body, path: .path, line: .line, side: .side, author: .user.login, created_at: .created_at, in_reply_to: .in_reply_to_id, commit_id: .commit_id, html_url: .html_url, pull_request_review_id: .pull_request_review_id}]"
+        "-q", ".[] | {id: .id, body: .body, path: .path, line: .line, side: .side, author: .user.login, created_at: .created_at, in_reply_to: .in_reply_to_id, commit_id: .commit_id, html_url: .html_url, pull_request_review_id: .pull_request_review_id}"
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
@@ -66,7 +66,7 @@ def fetch_review_states(pr_number: int, repo: str) -> dict:
         "gh", "api",
         f"/repos/{repo}/pulls/{pr_number}/reviews",
         "--paginate",
-        "-q", "[.[] | {id: .id, state: .state, author: .user.login}]"
+        "-q", ".[] | {id: .id, state: .state, author: .user.login}"
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
