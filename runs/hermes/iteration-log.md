@@ -42,7 +42,7 @@
 - **Next:** Iteration 3 — Orchestrator + telemetry (BG-003) and/or intent-collect skill (build.01-core)
 
 ---
-## Iteration 3 — 2026-06-29T02:00:00Z
+## Iteration 3 — 2026-06-29T17:00:00Z
 **Action:** Orchestrator + telemetry (BG-003)
 - **Spec reference:** build-plan/build-plan/build.01-core.md; FRAMEWORK.md §4-5; HERMES-BRIEF §7
 - **Plan:**
@@ -91,6 +91,3 @@
 - **Branch:** hermes/pr-review-resolution
 - **Priority:** MEDIUM (after BG-004 intent-collect, or parallel if subagent)
 - **Related:** Enables automated PR iteration loop; integrates with orchestrator + trajectory-guard
-- **Result:** ✓ telemetry.schema.json extended with expected_trajectory + trajectory_strictness fields; ✓ orchestrator/orchestrator.py implemented with skill invocation + telemetry writing; ✓ runs/noop-plan.json created as no-op proof; ✓ orchestrator/evals/test_orchestrator.py passes 7/7 tests (pytest); ✓ orchestrator runs no-op plan and writes valid telemetry with trajectory fields; ✓ telemetry validates against schema
-- **Diff:** ~250 lines added across schema, orchestrator, noop-plan, eval
-- **Next:** Iteration 4 — intent-collect skill (build.01-core) and/or trajectory-guard skill
