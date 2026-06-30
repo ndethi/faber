@@ -94,3 +94,38 @@
 - **Result:** ✓ telemetry.schema.json extended with expected_trajectory + trajectory_strictness fields; ✓ orchestrator/orchestrator.py implemented with skill invocation + telemetry writing; ✓ runs/noop-plan.json created as no-op proof; ✓ orchestrator/evals/test_orchestrator.py passes 7/7 tests (pytest); ✓ orchestrator runs no-op plan and writes valid telemetry with trajectory fields; ✓ telemetry validates against schema
 - **Diff:** ~250 lines added across schema, orchestrator, noop-plan, eval
 - **Next:** Iteration 4 — intent-collect skill (build.01-core) and/or trajectory-guard skill
+
+---
+## Iteration 5 (Planned) — PR Review Skill (BG-012)
+**Action:** New skill: Automated PR Review against Faber spec & best practices
+- **Source:** User request — automated first-pass PR review to reduce human reviewer burden
+- **Skill name:** `pr-review` (cross-cutting, runs on every PR targeting dev)
+- **Spec reference:** FRAMEWORK.md §1 (skill contract), §2 (cross-cutting skills), AGENTS.md §2.3 (PR discipline)
+- **Plan:**
+  1. **Draft SKILL.md** at `skills/pr-review/SKILL.md` with:
+     - Description: "Automated PR reviewer: fetches PR diff, runs deterministic checks (lint, tests, schema, trajectory, branch model, commit style, security), performs semantic review against FRAMEWORK.md/AGENTS.md/HERMES-BRIEF.md, posts structured GitHub review with inline comments"
+     - Inputs: PR_NUMBER, REPO, SPEC_FILES, HITL_GATE, CHECK_TRAJECTORY
+     - Outputs: review_report.json (verdict, issues, deterministic_checks)
+  2. **Implement scripts/**:
+     - `fetch_pr.py` — gh API for PR metadata, diff, CI checks
+     - `review.py` — deterministic checks + LLM semantic review
+     - `post_review.py` — submit GitHub review with inline comments
+  3. **Add evals/**: test with fixture PR diffs, assert categorization accuracy ≥ 0.9
+  4. **Registry entry** in `prompts/prompts/skill.pr-review.md`
+  5. **Run plan** in `runs/pr-review-plan.json` for orchestrator integration
+- **Dependencies:** orchestrator (BG-003), trajectory-guard (future), gh CLI auth
+- **Constraints:**
+  - Per AGENTS.md §2.7: no autonomous skill creation → manual PR
+  - Per FRAMEWORK.md §1: must have evals
+  - HITL gate: human reviews/approves PR after automated review
+- **Future Work:** 
+  - Integrate with adversarial model (different provider) for LLM review step
+  - Auto-trigger on PR open via webhook / GitHub Actions
+  - Correlation with trajectory-guard for trajectory conformance
+- **Expected diff:** ~300-400 lines across SKILL.md, 3 scripts, evals, registry, run plan
+- **Branch:** hermes/pr-review
+- **Priority:** MEDIUM (after BG-004 intent-collect)
+- **Related:** Enables automated PR quality gate; feeds into pr-review-resolution skill
+- **Result:** ✓ skills/pr-review/ created with SKILL.md, fetch_pr.py, review.py, post_review.py, test_pr_review.py; ✓ 8/8 eval tests pass (with --fast mode); ✓ runs/pr-review-plan.json created; ✓ test run on PR #10 produced APPROVE verdict
+- **Diff:** ~500 lines added across skill files, eval, run plan
+- **Next:** Iteration 5 — intent-collect skill (build.01-core) and/or trajectory-guard skill

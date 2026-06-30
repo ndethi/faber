@@ -1,0 +1,12 @@
+{
+  "run_id": "pr-review-test",
+  "strictness": "ordered",
+  "expected_trajectory": [
+    { "skill_id": "noop", "checkpoint": "start", "gate": false },
+    { "skill_id": "pr-review", "checkpoint": "review", "gate": true }
+  ],
+  "skills": [
+    { "skill_id": "noop", "component": "", "options": {} },
+    { "skill_id": "pr-review", "component": "/tmp/pr10_context.json", "options": { "repo_root": "/Users/ndethi/dev/ir/faber", "output": "/tmp/pr10_orch_review.json", "fast": true } }
+  ]
+}
