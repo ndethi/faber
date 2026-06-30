@@ -35,7 +35,7 @@ def main():
         sys.exit(1)
 
     mode = sys.argv[1]
-    repo_root = Path(__file__).parent.parent.parent  # scripts/ -> skills/ -> repo root
+    repo_root = Path(__file__).parent.parent.parent.parent  # scripts/ -> pr-review-resolution/ -> skills/ -> repo root
 
     if mode == "resolve":
         if len(sys.argv) < 4:
@@ -76,8 +76,11 @@ def main():
 
             # Step 3: Resolve
             print("🔧 Resolving comments...", file=sys.stderr)
+            resolve_args = [str(cat_file), str(repo_root)]
+            if hitl_gate:
+                resolve_args.append("--hitl")
             resolve_result = run_script(
-                "resolve.py", [str(cat_file), str(repo_root), "--hitl" if hitl_gate else ""],
+                "resolve.py", resolve_args,
                 repo_root
             )
             if "error" in resolve_result:
@@ -89,7 +92,10 @@ def main():
 
             # Step 4: Apply fixes (commit + push)
             print("📤 Applying fixes...", file=sys.stderr)
-            apply_result = run_script("apply_fixes.py", [str(resolve_file), str(pr_number), repo], repo_root)
+            apply_result = run_script(
+                "apply_fixes.py", [str(resolve_file), str(pr_number), repo, "--hitl-gate" if hitl_gate else ""],
+                repo_root
+            )
             if "error" in apply_result:
                 print(json.dumps({"error": f"Apply failed: {apply_result['error']}"}))
                 sys.exit(1)
@@ -117,10 +123,12 @@ def main():
                         if r.get("status") == "deferred"
                     ],
                 }
-                run_script("notify.py", ["resolve", str(fetch_file)], repo_root)
-                run_script("notify.py", ["push", str(fetch_file)], repo_root)
+                combined_file = tmpdir / "combined.json"
+                combined_file.write_text(json.dumps(combined))
+                run_script("notify.py", ["resolve", str(combined_file)], repo_root)
+                run_script("notify.py", ["push", str(combined_file)], repo_root)
                 if combined["deferred"]:
-                    run_script("notify.py", ["hitl", str(fetch_file)], repo_root)
+                    run_script("notify.py", ["hitl", str(combined_file)], repo_root)
 
             # Final output
             output = {

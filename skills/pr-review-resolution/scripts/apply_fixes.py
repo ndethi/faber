@@ -46,6 +46,7 @@ def apply_and_push(
     pr_number: int,
     repo: str,
     fix_results: List[Dict[str, Any]],
+    hitl_gate: bool = True,
 ) -> Dict[str, Any]:
     """Apply fixes, commit, push to PR branch."""
     branch = get_current_branch(repo_root)
@@ -59,25 +60,32 @@ def apply_and_push(
     if not applied:
         return {"branch": branch, "pushed": False, "reason": "No fixes to apply"}
 
-    # Push
-    pushed = push_branch(repo_root, branch)
+    # Commit
+    commit_shas = [r.get("commit_sha") for r in applied if r.get("commit_sha")]
+
+    # Push (skip if HITL gate enabled)
+    pushed = False
+    if not hitl_gate:
+        pushed = push_branch(repo_root, branch)
 
     return {
         "branch": branch,
         "pushed": pushed,
         "applied_count": len(applied),
-        "commit_shas": [r.get("commit_sha") for r in applied if r.get("commit_sha")],
+        "commit_shas": commit_shas,
+        "hitl_gate": hitl_gate,
     }
 
 
 def main():
     if len(sys.argv) < 4:
-        print(json.dumps({"error": "Usage: apply_fixes.py <results.json> <pr_number> <repo>"}))
+        print(json.dumps({"error": "Usage: apply_fixes.py <results.json> <pr_number> <repo> [--hitl-gate]"}))
         sys.exit(1)
 
     input_file = sys.argv[1]
     pr_number = int(sys.argv[2])
     repo = sys.argv[3]
+    hitl_gate = "--hitl-gate" in sys.argv
     repo_root = Path.cwd()
 
     try:
@@ -85,7 +93,7 @@ def main():
             data = json.load(f)
 
         fix_results = data.get("results", [])
-        result = apply_and_push(repo_root, pr_number, repo, fix_results)
+        result = apply_and_push(repo_root, pr_number, repo, fix_results, hitl_gate)
 
         print(json.dumps(result, indent=2))
     except Exception as e:

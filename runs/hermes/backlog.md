@@ -7,8 +7,8 @@
 | ID | Source | Item | Priority | Status |
 |----|--------|------|----------|--------|
 | BG-001 | State Report + §7 | **AGENTS.md swap to canonical** — replace bootstrap constitution with canonical version, preserving human's Commitizen + PR-policy additions | HIGH | done (PR #7 merged) |
-| BG-002 | State Report + §7 | **skills/build/ correction** — align SKILL.md to FRAMEWORK §8 (Astro + Cloudflare Pages default); add scripts/; add evals/ with passing test | HIGH | done (PR #8 merged) |
-| BG-003 | State Report | **Orchestrator + telemetry** — orchestrator/ exists? runs/telemetry.schema.json has trajectory fields? | HIGH | done (PR #9 open) |
+| BG-002 | State Report + §7 | **skills/build/ correction** — align SKILL.md to FRAMEWORK §8 (Astro + Cloudflare Pages default); add scripts/; add evals/ with passing test | HIGH | done (PR #8 open) |
+| BG-003 | State Report | **Orchestrator + telemetry** — orchestrator/ exists? runs/telemetry.schema.json has trajectory fields? | HIGH | open |
 
 ## Medium Priority
 
@@ -18,8 +18,8 @@
 | BG-005 | State Report | **Cross-cutting skills** — trajectory-guard, dashboard, model-route, scope-ledger, skill-author need completion | MEDIUM | open |
 | BG-006 | State Report | **_inbox/ and build-plan/** — persisted from v0.2 bundle or amend build.00 acceptance | MEDIUM | open |
 | BG-007 | State Report | **CI workflow** — per build-plan/build.02 once enough skills exist | MEDIUM | open |
-| BG-008 | State Report | **Client portal** — per app.client-portal@0.1.0 once skills + CI stable | MEDIUM | open |
-| BG-011 | User Request | **PR Review Resolution Skill** — fetch Copilot/GH review comments via gh API, categorize, auto-fix style/docs, LLM-fix logic, push fixes, update PR, Telegram notify | MEDIUM | done (PR #10 open) |
+|| BG-008 | State Report | **Client portal** — per app.client-portal@0.1.0 once skills + CI stable | MEDIUM | open ||
+|| BG-011 | User Request | **PR Review Resolution Skill** — fetch Copilot/GH review comments via gh API, systematically resolve each comment, push fixes, update PR | MEDIUM | open (PR #10) ||
 
 ## Low Priority / Tracking
 

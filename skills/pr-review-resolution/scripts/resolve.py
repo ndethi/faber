@@ -21,6 +21,8 @@ class FixResult:
     commit_sha: Optional[str] = None
     error: Optional[str] = None
     diff: Optional[str] = None
+    category: Optional[str] = None
+    path: Optional[str] = None
 
 
 def run_cmd(cmd: List[str], cwd: Path = None) -> subprocess.CompletedProcess:
@@ -123,38 +125,38 @@ def resolve_comments(
                     modified = apply_style_fixes(repo_root, [path])
                     if modified:
                         auto_files.update(modified)
-                        results.append(FixResult(cid, "applied", "auto"))
+                        results.append(FixResult(cid, "applied", "auto", category=category, path=path))
                     else:
-                        results.append(FixResult(cid, "skipped", "auto", error="No changes from formatter"))
+                        results.append(FixResult(cid, "skipped", "auto", error="No changes from formatter", category=category, path=path))
                 elif category == "docs":
                     if apply_doc_fixes(repo_root, cat):
                         auto_files.add(path)
-                        results.append(FixResult(cid, "applied", "auto"))
+                        results.append(FixResult(cid, "applied", "auto", category=category, path=path))
                     else:
-                        results.append(FixResult(cid, "deferred", "auto", error="Doc content needs human"))
+                        results.append(FixResult(cid, "deferred", "auto", error="Doc content needs human", category=category, path=path))
                 elif category == "test":
                     if apply_test_fixes(repo_root, cat):
                         auto_files.add(path)
-                        results.append(FixResult(cid, "applied", "auto"))
+                        results.append(FixResult(cid, "applied", "auto", category=category, path=path))
                     else:
-                        results.append(FixResult(cid, "deferred", "auto", error="Test template needs human"))
+                        results.append(FixResult(cid, "deferred", "auto", error="Test template needs human", category=category, path=path))
                 else:
-                    results.append(FixResult(cid, "deferred", "auto", error=f"Unknown auto category: {category}"))
+                    results.append(FixResult(cid, "deferred", "auto", error=f"Unknown auto category: {category}", category=category, path=path))
 
             elif fix_type == "llm":
                 # Would call LLM here with context
                 diff = apply_llm_fix(repo_root, cat, {})
                 if diff:
                     # Apply diff, test, commit
-                    results.append(FixResult(cid, "applied", "llm", diff=diff))
+                    results.append(FixResult(cid, "applied", "llm", diff=diff, category=category, path=path))
                 else:
-                    results.append(FixResult(cid, "deferred", "llm", error="LLM fix not implemented"))
+                    results.append(FixResult(cid, "deferred", "llm", error="LLM fix not implemented", category=category, path=path))
 
             else:  # defer
-                results.append(FixResult(cid, "deferred", "defer", error="Requires human review"))
+                results.append(FixResult(cid, "deferred", "defer", error="Requires human review", category=category, path=path))
 
         except Exception as e:
-            results.append(FixResult(cid, "failed", fix_type, error=str(e)))
+            results.append(FixResult(cid, "failed", fix_type, error=str(e), category=category, path=path))
 
     # Commit auto fixes if any
     if auto_files:
