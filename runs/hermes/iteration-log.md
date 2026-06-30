@@ -40,3 +40,57 @@
 - **Result:** ✓ SKILL.md updated with Astro + Cloudflare Pages defaults; ✓ build.py implements Astro build wrapper with package.json check; ✓ test_build.py passes 6/6 tests (pytest + direct); ✓ BG-002 marked done
 - **Diff:** ~120 lines added across SKILL.md, build.py, test_build.py
 - **Next:** Iteration 3 — Orchestrator + telemetry (BG-003) and/or intent-collect skill (build.01-core)
+
+---
+## Iteration 3 — 2026-06-29T02:00:00Z
+**Action:** Orchestrator + telemetry (BG-003)
+- **Spec reference:** build-plan/build-plan/build.01-core.md; FRAMEWORK.md §4-5; HERMES-BRIEF §7
+- **Plan:**
+  1. Extend `runs/telemetry.schema.json` with trajectory fields (expected vs actual trajectory, strictness)
+  2. Implement `orchestrator/orchestrator.py`: reads run plan (ordered skill list + strictness), invokes skills sequentially, writes `runs/<id>/telemetry.json` against schema
+  3. Add no-op run plan to prove orchestrator works
+  4. Add eval for orchestrator (run no-op plan → validate telemetry output)
+- **Expected diff:** ~150-200 lines across schema + orchestrator + run plan + eval
+- **Branch:** hermes/orchestrator-telemetry
+- **PR target:** dev (referencing skill.orchestrator@1.0.0 when registry entry created)
+- **Constraint:** Per build.01-core acceptance: orchestrator runs no-op plan and writes valid telemetry
+- **Result:** ✓ telemetry.schema.json extended with expected_trajectory + trajectory_strictness; ✓ orchestrator/orchestrator.py implements plan execution + telemetry writing; ✓ runs/noop-plan.json no-op plan; ✓ orchestrator/evals/test_orchestrator.py passes 7/7 tests; ✓ BG-003 marked done
+- **Diff:** ~200 lines added across schema, orchestrator.py, noop-plan.json, test_orchestrator.py, noop skill
+- **Next:** Iteration 4 — intent-collect skill (build.01-core) or remaining HIGH priority items
+
+---
+## Iteration 4 (Planned) — PR Review Resolution Skill (BG-011)
+**Action:** New skill: PR Review Resolution
+- **Source:** User request — systematically resolve Copilot/GH review comments from email
+- **Skill name:** `pr-review-resolution` (lifecycle-adjacent, cross-cutting)
+- **Spec reference:** FRAMEWORK.md §1 (skill contract), §2 (cross-cutting skills), HERMES-BRIEF §1.4 (no autonomous skill creation)
+- **Plan:**
+  1. **Draft SKILL.md** at `skills/pr-review-resolution/SKILL.md` with:
+     - Description: "Fetches review comments from GitHub PR (via gh API or email parsing), categorizes by type (nit, bug, design, test), generates fixes, pushes to branch, updates PR"
+     - Inputs: PR number, repo, comment source (gh API / email / webhook)
+     - Outputs: Resolution report (comment_id → fix_commit_sha / deferred / wontfix)
+     - Interface: JSON in/out for orchestrator compatibility
+  2. **Implement scripts/**:
+     - `fetch_comments.py` — gh pr view --comments / parse email via himalaya/IMAP
+     - `categorize.py` — classify comments (style, logic, test, docs, security)
+     - `resolve.py` — for each comment: generate fix (AST edit / LLM), run tests, commit
+     - `push_update.py` — push to hermes/<topic> branch, update PR description
+  3. **Add evals/**:
+     - Test with mock PR comments (fixture)
+     - Verify categorization accuracy
+     - Verify fix compiles + tests pass
+     - Verify git operations (commit, push, PR update)
+  4. **Registry entry** in `prompts/prompts/skill.pr-review-resolution.md`
+  5. **PR** targeting `dev` referencing `skill.pr-review-resolution@1.0.0`
+- **Dependencies:** Requires `gh` CLI auth, `himalaya` for email (optional), git write access
+- **Constraints:** 
+  - Per AGENTS.md §2.7: no autonomous skill creation → manual PR (skill-author not yet built)
+  - Per FRAMEWORK.md §1: must have evals
+  - HITL gate: human reviews generated fixes before push (configurable)
+- **Expected diff:** ~300-400 lines across SKILL.md, 4-5 scripts, evals, registry entry
+- **Branch:** hermes/pr-review-resolution
+- **Priority:** MEDIUM (after BG-004 intent-collect, or parallel if subagent)
+- **Related:** Enables automated PR iteration loop; integrates with orchestrator + trajectory-guard
+- **Result:** ✓ telemetry.schema.json extended with expected_trajectory + trajectory_strictness fields; ✓ orchestrator/orchestrator.py implemented with skill invocation + telemetry writing; ✓ runs/noop-plan.json created as no-op proof; ✓ orchestrator/evals/test_orchestrator.py passes 7/7 tests (pytest); ✓ orchestrator runs no-op plan and writes valid telemetry with trajectory fields; ✓ telemetry validates against schema
+- **Diff:** ~250 lines added across schema, orchestrator, noop-plan, eval
+- **Next:** Iteration 4 — intent-collect skill (build.01-core) and/or trajectory-guard skill

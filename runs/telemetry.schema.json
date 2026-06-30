@@ -8,7 +8,7 @@
     "timestamp": { "type": "string", "format": "date-time", "description": "Run start timestamp in ISO‑8601 format." },
     "skills": {
       "type": "array",
-      "description": "Ordered list of skill executions.",
+      "description": "Ordered list of skill executions (actual trajectory).",
       "items": {
         "type": "object",
         "required": ["skill_id", "status", "duration_ms"],
@@ -18,6 +18,26 @@
           "duration_ms": { "type": "integer", "minimum": 0 }
         }
       }
+    },
+    "expected_trajectory": {
+      "type": "array",
+      "description": "Expected ordered trajectory from intent-collect (for trajectory-guard comparison).",
+      "items": {
+        "type": "object",
+        "required": ["skill_id", "checkpoint"],
+        "properties": {
+          "skill_id": { "type": "string" },
+          "checkpoint": { "type": "string", "description": "Checkpoint name (e.g., 'spec-ready', 'build-complete', 'deploy-preview')" },
+          "gate": { "type": "boolean", "default": false, "description": "Whether this step is a HITL gate" },
+          "strictness": { "type": "string", "enum": ["exact", "ordered", "partial"], "default": "ordered" }
+        }
+      }
+    },
+    "trajectory_strictness": {
+      "type": "string",
+      "enum": ["exact", "ordered", "partial"],
+      "description": "Strictness mode for trajectory-guard comparison.",
+      "default": "ordered"
     },
     "model": { "type": "string", "description": "Model used for the run (e.g., claude‑opus‑4‑x)." },
     "tokens": {
