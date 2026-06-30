@@ -14,7 +14,7 @@
 
 | ID | Source | Item | Priority | Status |
 |----|--------|------|----------|--------|
-| BG-004 | State Report | **Missing lifecycle skills** — intent-collect, scaffold, evaluate, deploy, publish, observe, feedback need SKILL.md + scripts/ + evals/ | MEDIUM | open |
+|| BG-004 | State Report | **Missing lifecycle skills** — intent-collect, scaffold, evaluate, deploy, publish, observe, feedback need SKILL.md + scripts/ + evals/ | MEDIUM | done ||
 | BG-005 | State Report | **Cross-cutting skills** — trajectory-guard, dashboard, model-route, scope-ledger, skill-author need completion | MEDIUM | open |
 | BG-006 | State Report | **_inbox/ and build-plan/** — persisted from v0.2 bundle or amend build.00 acceptance | MEDIUM | open |
 | BG-007 | State Report | **CI workflow** — per build-plan/build.02 once enough skills exist | MEDIUM | open |
