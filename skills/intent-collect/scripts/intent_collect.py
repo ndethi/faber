@@ -6,9 +6,9 @@ Implements structured elicitation: extract → elicit → spec → trajectory �
 scope-baseline → [HITL] confirm.
 
 Produces:
-- spec.md: Canonical,spec.md - Source of truth with IDed acceptance criteria
--,trajectory.md - Expected path (ordered DAG of lifecycle steps)
--,scope-baseline.md - Client-shareable scope baseline
+- spec.md - Source of truth with IDed acceptance criteria
+- trajectory.md - Expected path (ordered DAG of lifecycle steps)
+- scope-baseline.md - Client-shareable scope baseline
 """
 import json
 import os
@@ -48,14 +48,45 @@ def extract_facts(client_context: str) -> Dict[str, str]:
     facts = {}
     ctx_lower = client_context.lower()
     
-    # Simple keyword extraction - in practice this could be more sophisticated
+    # Simple keyword extraction - returns None for unknowns so caller can use defaults
+    # In practice this could be more sophisticated (LLM-based extraction)
+    goal = None
+    audience = None
+    constraints = None
+    
     if "goal" in ctx_lower or "objective" in ctx_lower:
-        facts["goal"] = "extracted from context"
+        # Extract what comes after "goal:" or "objective:"
+        for line in client_context.split('\n'):
+            if 'goal:' in line.lower() or 'objective:' in line.lower():
+                parts = line.split(':', 1)
+                if len(parts) > 1:
+                    goal = parts[1].strip()
+                    break
+    
     if "audience" in ctx_lower or "user" in ctx_lower:
-        facts["audience"] = "extracted from context"
+        for line in client_context.split('\n'):
+            if 'audience:' in line.lower() or 'user:' in line.lower():
+                parts = line.split(':', 1)
+                if len(parts) > 1:
+                    audience = parts[1].strip()
+                    break
+    
     if "constraint" in ctx_lower or "limit" in ctx_lower:
-        facts["constraints"] = "extracted from context"
-        
+        for line in client_context.split('\n'):
+            if 'constraint:' in line.lower() or 'limit:' in line.lower():
+                parts = line.split(':', 1)
+                if len(parts) > 1:
+                    constraints = parts[1].strip()
+                    break
+    
+    # Only add to facts if we actually extracted something
+    if goal:
+        facts["goal"] = goal
+    if audience:
+        facts["audience"] = audience
+    if constraints:
+        facts["constraints"] = constraints
+    
     return facts
 
 def elicit_gaps(client_context: str, facts: Dict[str, str]) -> List[str]:
@@ -83,7 +114,7 @@ def generate_spec(client_context: str, facts: Dict[str, str], gaps: List[str]) -
     goal = facts.get("goal", "Build a website")  # default from fixture
     audience = facts.get("audience", "Marketing team")
     constraints = facts.get("constraints", "Brand guidelines")
-    
+   
     spec = f"""# Spec
 
 ## Context
@@ -97,8 +128,8 @@ def generate_spec(client_context: str, facts: Dict[str, str], gaps: List[str]) -
 """
     
     # Generate at least 2 IDed acceptance criteria based on context
-    spec += "- SPEC-01: The system shall support the primary goal: {goal}\\n"
-    spec += "- SPEC-02: The system shall serve the target audience: {audience}\\n"
+    spec += f"- SPEC-01: The system shall support the primary goal: {goal}\\n"
+    spec += f"- SPEC-02: The system shall serve the target audience: {audience}\\n"
     
     # Add more specific criteria if we detect domains
     if "blog" in client_context.lower() or "cms" in client_context.lower():
@@ -110,7 +141,13 @@ def generate_spec(client_context: str, facts: Dict[str, str], gaps: List[str]) -
     else:
         spec += "- SPEC-03: System shall be responsive and accessible\\n"
         spec += "- SPEC-04: System shall follow security best practices\\n"
-        
+    
+    # Surface gaps as TODO items (per non-fabrication rule)
+    if gaps:
+        spec += "\n## TODO (Elicited Gaps)\n"
+        for gap in gaps:
+            spec += f"- TODO: {gap}\n"
+      
     return spec
 
 def generate_trajectory(production_context: str) -> str:
@@ -209,6 +246,38 @@ def main() -> None:
     trajectory = generate_trajectory(args.production_context)
     scope = generate_scope_baseline(args.client_context, facts)
     
+    # HITL gate: if enabled, require manual confirmation of scope-baseline
+    hitl_gate_passed = True
+    if args.hitl_gate:
+        print("\n=== HITL GATE: Scope Baseline Review Required ===")
+        print("Generated scope-baseline.md:")
+        print("-" * 60)
+        print(scope)
+        print("-" * 60)
+        print("Do you confirm this scope baseline? [y/N]: ", end="", flush=True)
+        try:
+            response = input().strip().lower()
+            if response not in ('y', 'yes'):
+                hitl_gate_passed = False
+                print("HITL gate not passed. Exiting without writing files.")
+            else:
+                print("HITL gate passed. Proceeding...")
+        except (EOFError, KeyboardInterrupt):
+            hitl_gate_passed = False
+            print("\nHITL gate interrupted. Exiting without writing files.")
+    
+    if not hitl_gate_passed:
+        result = {
+            "status": "hitl_gate_failed",
+            "artifacts": [],
+            "hitl_gate_required": True,
+            "hitl_gate_passed": False,
+            "extracted_facts": facts,
+            "elicited_gaps": gaps,
+        }
+        print(json.dumps(result, indent=2))
+        sys.exit(1)
+    
     write_files(spec, trajectory, scope, args.output_dir)
     
     # Emit machine-readable summary for orchestration
@@ -216,6 +285,7 @@ def main() -> None:
         "status": "success",
         "artifacts": ["spec.md", "trajectory.md", "scope-baseline.md"],
         "hitl_gate_required": args.hitl_gate,
+        "hitl_gate_passed": True,
         "extracted_facts": facts,
         "elicited_gaps": gaps,
         "spec_lines": len(spec.splitlines()),

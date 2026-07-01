@@ -50,7 +50,7 @@ def test_script_help() -> None:
     assert "usage" in output.lower() or "arguments" in output.lower(), "Should show usage"
     print("✓ Script shows usage without required args")
 
-def test_output_structure_rohai_fixture() -> None:
+def test_output_structure_rohaki_fixture() -> None:
     """Test that running on Rohaki fixture produces expected output structure."""
     # Use the existing fixtures/rohaki directory as input context
     fixture_dir = Path("fixtures/rohaki")
@@ -192,7 +192,7 @@ def main() -> None:
         test_skill_md_exists,
         test_script_exists_and_executable,
         test_script_help,
-        test_output_structure_rohai_fixture,
+        test_output_structure_rohaki_fixture,
         test_determinism,
         test_todo_not_fabrication,
         test_production_context_mapping,
