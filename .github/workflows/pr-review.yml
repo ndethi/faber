@@ -1,0 +1,20 @@
+name: PR Review Agent
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run PR Review Resolution
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python skills/pr-review-resolution/scripts/pr_review_resolution.py resolve \
+            ${{ github.event.pull_request.number }} \
+            ${{ github.repository }}
