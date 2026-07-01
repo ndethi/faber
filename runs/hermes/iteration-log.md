@@ -13,7 +13,7 @@
 - **Next:** Human review of backlog prioritization; begin Iteration 1
 
 ---
----
+
 ## Iteration 1 — 2026-06-29T01:18:00Z
 **Action:** AGENTS.md swap to canonical (BG-001)
 - Replaced bootstrap constitution with canonical version per FRAMEWORK.md
@@ -26,6 +26,7 @@
 - **Next:** Await human review & merge (HITL gate)
 
 ---
+
 ## Iteration 2 — 2026-06-29T01:30:00Z
 **Action:** skills/build/ correction (BG-002)
 - **Spec reference:** HERMES-BRIEF §7 item 2; build-plan/build-plan/build.02-lifecycle-ci.md; FRAMEWORK.md §8 default (Astro + Cloudflare Pages)
@@ -42,6 +43,7 @@
 - **Next:** Iteration 3 — Orchestrator + telemetry (BG-003) and/or intent-collect skill (build.01-core)
 
 ---
+
 ## Iteration 3 — 2026-06-29T17:00:00Z
 **Action:** Orchestrator + telemetry (BG-003)
 - **Spec reference:** build-plan/build-plan/build.01-core.md; FRAMEWORK.md §4-5; HERMES-BRIEF §7
@@ -59,35 +61,84 @@
 - **Next:** Iteration 4 — intent-collect skill (build.01-core) or remaining HIGH priority items
 
 ---
-## Iteration 4 (Planned) — PR Review Resolution Skill (BG-011)
-**Action:** New skill: PR Review Resolution
-- **Source:** User request — systematically resolve Copilot/GH review comments from email
+
+## Iteration 4 — 2026-06-30T06:09:00Z
+**Action:** PR Review Resolution Skill (BG-011)
+- **Source:** User request — systematically resolve Copilot/GH review comments
 - **Skill name:** `pr-review-resolution` (lifecycle-adjacent, cross-cutting)
 - **Spec reference:** FRAMEWORK.md §1 (skill contract), §2 (cross-cutting skills), HERMES-BRIEF §1.4 (no autonomous skill creation)
 - **Plan:**
   1. **Draft SKILL.md** at `skills/pr-review-resolution/SKILL.md` with:
-     - Description: "Fetches review comments from GitHub PR (via gh API or email parsing), categorizes by type (nit, bug, design, test), generates fixes, pushes to branch, updates PR"
-     - Inputs: PR number, repo, comment source (gh API / email / webhook)
-     - Outputs: Resolution report (comment_id → fix_commit_sha / deferred / wontfix)
+     - Description: "Fetches review comments from GitHub PR (via gh API), categorizes by type, generates fixes, pushes to branch, updates PR"
+     - Inputs: PR number, repo, hitl_gate flag
+     - Outputs: Resolution report (comment_id → fix status)
      - Interface: JSON in/out for orchestrator compatibility
   2. **Implement scripts/**:
-     - `fetch_comments.py` — gh pr view --comments / parse email via himalaya/IMAP
-     - `categorize.py` — classify comments (style, logic, test, docs, security)
-     - `resolve.py` — for each comment: generate fix (AST edit / LLM), run tests, commit
-     - `push_update.py` — push to hermes/<topic> branch, update PR description
+     - `fetch_comments.py` — gh pr view --comments
+     - `categorize.py` — classify comments (style, docs, security, test, logic, design)
+     - `resolve.py` — for each comment: generate fix (auto/llm/deferred), run tests, commit
+     - `apply_fixes.py` — apply fixes with HITL gate
+     - `notify.py` — send Telegram notifications
+     - `pr_review_resolution.py` — main entry point
   3. **Add evals/**:
      - Test with mock PR comments (fixture)
      - Verify categorization accuracy
      - Verify fix compiles + tests pass
      - Verify git operations (commit, push, PR update)
-  4. **Registry entry** in `prompts/prompts/skill.pr-review-resolution.md`
-  5. **PR** targeting `dev` referencing `skill.pr-review-resolution@1.0.0`
-- **Dependencies:** Requires `gh` CLI auth, `himalaya` for email (optional), git write access
+  4. **Registry entry** already exists at `skills/pr-review-resolution/SKILL.md`
+  5. **PR** merged to dev
+- **Dependencies:** `gh` CLI auth
 - **Constraints:** 
   - Per AGENTS.md §2.7: no autonomous skill creation → manual PR (skill-author not yet built)
   - Per FRAMEWORK.md §1: must have evals
-  - HITL gate: human reviews generated fixes before push (configurable)
-- **Expected diff:** ~300-400 lines across SKILL.md, 4-5 scripts, evals, registry entry
-- **Branch:** hermes/pr-review-resolution
-- **Priority:** MEDIUM (after BG-004 intent-collect, or parallel if subagent)
+  - HITL gate: human reviews generated fixes before push (configurable via --hitl-gate)
+- **Expected diff:** ~300-400 lines across SKILL.md, 5 scripts, evals
+- **Branch:** hermes/pr-review-resolution → merged to dev
+- **Priority:** MEDIUM (BG-004 intent-collect is next)
 - **Related:** Enables automated PR iteration loop; integrates with orchestrator + trajectory-guard
+- **Result:** ✓ All 21 Copilot comments resolved on PR #10; ✓ PR #9 (orchestrator) and PR #10 merged; ✓ evals pass; ✓ BG-011 marked done
+- **Diff:** ~1620 lines added (skills/pr-review-resolution/*), ~14 lines deleted (scope creep from BG-003)
+- **Next:** Iteration 5 — intent-collect skill (BG-004)
+
+---
+
+## Iteration 5 — 2026-06-30T06:45:00Z
+**Action:** Build intent-collect skill (BG-004)
+- **Source:** State Report + FRAMEWORK.md §3 (lifecycle ring)
+- **Skill name:** `intent-collect` (lifecycle skill #1)
+- **Spec reference:** FRAMEWORK.md §3; build-plan/build-plan/build.01-core.md; prompts/skill.intent-collector.md
+- **Plan:**
+  1. **Create `skills/intent-collect/{SKILL.md, scripts/, evals/}`** per FRAMEWORK skill contract
+  2. **Draft SKILL.md** at `skills/intent-collect/SKILL.md` with:
+     - Description: "Turn fuzzy client conversation into a deterministic, testable spec plus an expected trajectory and a client-shareable scope baseline — the only sanctioned way to create or change intent."
+     - Inputs: CLIENT_CONTEXT, PRODUCTION_CONTEXT
+     - Outputs: spec.md, trajectory.md, scope-baseline.md
+     - Interface: JSON in/out for orchestrator compatibility
+  3. **Implement scripts/**:
+     - `intent_collect.py` — structured elicitation: extract → elicit → spec → trajectory → scope-baseline → HITL
+     - Fixed question set: goals, audiences+JTBD, non-goals, IA, content model, constraints, success metrics
+     - Emit spec.md with IDed acceptance criteria (SPEC-NN)
+     - Derive trajectory.md — ordered DAG of lifecycle skill steps + checkpoints + gates
+     - Emit scope-baseline.md — plain-language, client-shareable; seeds scope-ledger
+  4. **Add evals/**:
+     - Test with fixture brief (use existing output/ as fixture or create fixtures/rohaki/)
+     - Assert the three artifacts are produced with required sections
+     - Verify at least N IDed acceptance criteria in spec.md
+     - Verify re-running yields identical artifact structure (determinism check)
+     - Verify unknowns appear as `TODO:`, never fabricated
+  5. **Registry entry** in `prompts/prompts/skill.intent-collector.md` (already exists)
+  6. **PR** targeting `dev` referencing `skill.intent-collector@1.0.0`
+- **Dependencies:** orchestrator already built (BG-003)
+- **Constraints:** 
+  - Per AGENTS.md §2.7: no autonomous skill creation → manual PR (skill-author not yet built)
+  - Per FRAMEWORK.md §1: must have evals
+  - HITL gate: scope-baseline.md requires client confirmation before build (per build.01-core)
+- **Expected diff:** ~200-300 lines across SKILL.md, scripts/, evals/
+- **Branch:** hermes/intent-collect
+- **Priority:** MEDIUM (BG-004)
+- **Related:** Enables deterministic front door; feeds trajectory-guard; seeds scope-ledger
+- **Result:** ✓ SKILL.md created with pushy description; ✓ intent_collect.py implements structured elicitation; ✓ evals/test_intent_collect.py passes 7/7 tests; ✓ BG-004 marked done
+- **Diff:** ~250 lines added across SKILL.md, scripts/, evals/
+- **Next:** After BG-004, consider BG-005 (cross-cutting) or BG-012 (pr-review skill separate PR)
+
+---
