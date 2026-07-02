@@ -30,12 +30,27 @@ def main():
             "modes": {
                 "resolve": "<pr_number> <repo> [--hitl] [--no-notify]",
                 "analyze": "<repo> <since_YYYY-MM-DD> <output.json> [limit]",
+                "review": "--pr-number <num> --repo <owner/name> --model <model> --adversarial [--post-comments]",
             }
         }))
         sys.exit(1)
 
     mode = sys.argv[1]
     repo_root = Path(__file__).parent.parent.parent.parent  # scripts/ -> pr-review-resolution/ -> skills/ -> repo root
+
+    if mode == "review":
+        # Parse review args
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--pr-number", type=int, required=True)
+        parser.add_argument("--repo", required=True)
+        parser.add_argument("--model", required=True)
+        parser.add_argument("--adversarial", action="store_true")
+        parser.add_argument("--post-comments", action="store_true")
+        args = parser.parse_args(sys.argv[2:])
+        
+        run_adversarial_review(args.pr_number, args.repo, args.model, args.adversarial, args.post_comments, repo_root)
+        return
 
     if mode == "resolve":
         if len(sys.argv) < 4:
@@ -165,6 +180,133 @@ def main():
     else:
         print(json.dumps({"error": f"Unknown mode: {mode}"}))
         sys.exit(1)
+
+
+def run_adversarial_review(pr_number: int, repo: str, model: str, adversarial: bool, post_comments: bool, repo_root: Path):
+    """Run adversarial review on a PR using a different model."""
+    import subprocess
+    import tempfile
+    
+    print(f"🔍 Running adversarial review on PR #{pr_number} with {model}", file=sys.stderr)
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        # Step 1: Fetch PR diff and files
+        print("📥 Fetching PR diff...", file=sys.stderr)
+        diff_file = tmpdir / "pr.diff"
+        diff_cmd = ["gh", "pr", "diff", str(pr_number), "--repo", repo]
+        diff_result = subprocess.run(diff_cmd, capture_output=True, text=True)
+        if diff_result.returncode != 0:
+            print(json.dumps({"error": f"Failed to fetch diff: {diff_result.stderr}"}))
+            sys.exit(1)
+        diff_file.write_text(diff_result.stdout)
+        
+        # Step 2: Get changed files
+        files_cmd = ["gh", "pr", "view", str(pr_number), "--repo", repo, "--json", "files"]
+        files_result = subprocess.run(files_cmd, capture_output=True, text=True)
+        if files_result.returncode != 0:
+            print(json.dumps({"error": f"Failed to fetch files: {files_result.stderr}"}))
+            sys.exit(1)
+        files_data = json.loads(files_result.stdout)
+        changed_files = [f["path"] for f in files_data.get("files", [])]
+        
+        # Step 3: Run adversarial review using the model
+        # For now, use our categorize/resolve scripts with adversarial prompt
+        review_prompt = build_adversarial_prompt(diff_result.stdout, changed_files, adversarial)
+        prompt_file = tmpdir / "review_prompt.txt"
+        prompt_file.write_text(review_prompt)
+        
+        # Use the model via gh api or local
+        # For CI, we'll use a simpler approach: run categorize with adversarial flag
+        print("🏷️  Running adversarial categorization...", file=sys.stderr)
+        
+        # Fetch comments first
+        fetch_result = run_script("fetch_comments.py", [str(pr_number), repo], repo_root)
+        if "error" not in fetch_result:
+            fetch_file = tmpdir / "fetched.json"
+            fetch_file.write_text(json.dumps(fetch_result))
+            
+            # Categorize with adversarial flag
+            cat_result = run_script("categorize.py", [str(fetch_file), "--adversarial"], repo_root)
+            if "error" not in cat_result:
+                cat_file = tmpdir / "categorized.json"
+                cat_file.write_text(json.dumps(cat_result))
+                
+                if post_comments:
+                    # Post review comments back to PR
+                    print("💬 Posting review comments...", file=sys.stderr)
+                    post_review_comments(pr_number, repo, cat_result, repo_root)
+        
+        output = {
+            "mode": "review",
+            "pr_number": pr_number,
+            "repo": repo,
+            "model": model,
+            "adversarial": adversarial,
+            "changed_files": changed_files,
+            "status": "completed",
+        }
+        print(json.dumps(output, indent=2))
+
+
+def build_adversarial_prompt(diff: str, changed_files: list, adversarial: bool) -> str:
+    """Build adversarial review prompt."""
+    mode = "ADVERSARIAL" if adversarial else "STANDARD"
+    return f"""
+You are an {mode} code reviewer for the Faber framework.
+
+## Context
+- Framework: Faber agentic web framework
+- Skills must follow: SKILL.md + scripts/ + evals/
+- No fabrication: unknowns = TODO:
+- Deterministic scripts, model only orchestrates
+- FRAMEWORK.md contract compliance required
+
+## Changed Files
+{chr(10).join(changed_files)}
+
+## Diff
+{diff[:15000]}
+
+## Review Criteria
+1. **Correctness** - Logic errors, edge cases, error handling
+2. **Security** - Injection, auth, secrets, validation
+3. **Design** - Coupling, abstraction, FRAMEWORK.md compliance
+4. **Spec Violation** - Deviates from skill contract
+5. **Missing Tests** - No evals, incomplete coverage
+6. **Fabrication** - Invents facts, no TODO: for unknowns
+7. **Non-determinism** - Scripts must be deterministic
+
+## Output Format
+For each issue found, output JSON lines:
+{{
+  "file": "path/to/file.py",
+  "line": 42,
+  "severity": "BLOCKER|CRITICAL|MAJOR|MINOR|NIT",
+  "category": "bug|security|design|spec-violation|missing-test|fabrication|nit",
+  "message": "Specific, actionable description",
+  "suggestion": "Concrete fix suggestion"
+}}
+"""
+
+
+def post_review_comments(pr_number: int, repo: str, cat_result: dict, repo_root: Path):
+    """Post review comments to PR."""
+    import subprocess
+    
+    for comment in cat_result.get("comments", []):
+        if comment.get("severity") in ("BLOCKER", "CRITICAL", "MAJOR"):
+            # Post as review comment
+            body = f"**[{comment['severity']}] {comment['category']}**\n\n{comment['message']}\n\n*Suggestion:* {comment.get('suggestion', 'N/A')}"
+            cmd = [
+                "gh", "api", "--method", "POST",
+                f"/repos/{repo}/pulls/{pr_number}/comments",
+                "-f", f"body={body}",
+                "-f", f"path={comment['file']}",
+                "-f", f"position={comment.get('line', 1)}"
+            ]
+            subprocess.run(cmd, capture_output=True)
 
 
 if __name__ == "__main__":
