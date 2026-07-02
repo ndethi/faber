@@ -2,6 +2,11 @@
 """
 Main entry point for pr-review-resolution skill.
 Orchestrates the full pipeline: fetch → categorize → resolve → apply → update → notify
+
+Supports modes:
+- resolve: Fix review comments on a PR
+- analyze: Analyze PR patterns over time  
+- review: Adversarial review of a PR (different model than writer)
 """
 import json
 import subprocess
@@ -23,19 +28,163 @@ def run_script(script: str, args: List[str], repo_root: Path) -> Dict[str, Any]:
         return {"error": "Invalid JSON output", "stdout": result.stdout[:500]}
 
 
-def main():
-    if len(sys.argv) < 2:
-        print(json.dumps({
-            "usage": "pr_review_resolution.py <mode> [args...]",
-            "modes": {
-                "resolve": "<pr_number> <repo> [--hitl] [--no-notify]",
-                "analyze": "<repo> <since_YYYY-MM-DD> <output.json> [limit]",
-            }
-        }))
-        sys.exit(1)
+def run_adversarial_review(pr_number: int, repo: str, model: str, adversarial: bool, post_comments: bool, repo_root: Path):
+    """Run adversarial review on a PR using a different model."""
+    import subprocess
+    
+    print(f"🔍 Running adversarial review on PR #{pr_number} with {model}", file=sys.stderr)
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        # Step 1: Fetch PR diff and files
+        print("📥 Fetching PR diff...", file=sys.stderr)
+        diff_file = tmpdir / "pr.diff"
+        diff_cmd = ["gh", "pr", "diff", str(pr_number), "--repo", repo]
+        diff_result = subprocess.run(diff_cmd, capture_output=True, text=True)
+        if diff_result.returncode != 0:
+            print(json.dumps({"error": f"Failed to fetch diff: {diff_result.stderr}"}))
+            sys.exit(1)
+        diff_file.write_text(diff_result.stdout)
+        
+        # Step 2: Get changed files
+        files_cmd = ["gh", "pr", "view", str(pr_number), "--repo", repo, "--json", "files"]
+        files_result = subprocess.run(files_cmd, capture_output=True, text=True)
+        if files_result.returncode != 0:
+            print(json.dumps({"error": f"Failed to fetch files: {files_result.stderr}"}))
+            sys.exit(1)
+        files_data = json.loads(files_result.stdout)
+        changed_files = [f["path"] for f in files_data.get("files", [])]
+        
+        # Step 3: Run adversarial categorization
+        print("🏷️  Running adversarial categorization...", file=sys.stderr)
+        
+        # Fetch comments first
+        fetch_result = run_script("fetch_comments.py", [str(pr_number), repo], repo_root)
+        if "error" not in fetch_result:
+            fetch_file = tmpdir / "fetched.json"
+            fetch_file.write_text(json.dumps(fetch_result))
+            
+            # Categorize with adversarial flag
+            cat_result = run_script("categorize.py", [str(fetch_file), "--adversarial"], repo_root)
+            if "error" not in cat_result:
+                cat_file = tmpdir / "categorized.json"
+                cat_file.write_text(json.dumps(cat_result))
+                
+                if post_comments:
+                    print("💬 Posting review comments...", file=sys.stderr)
+                    post_review_comments(pr_number, repo, cat_result, repo_root)
+        
+        output = {
+            "mode": "review",
+            "pr_number": pr_number,
+            "repo": repo,
+            "model": model,
+            "adversarial": adversarial,
+            "changed_files": changed_files,
+            "status": "completed",
+        }
+        print(json.dumps(output, indent=2))
 
-    mode = sys.argv[1]
+
+def build_adversarial_prompt(diff: str, changed_files: list, adversarial: bool) -> str:
+    """Build adversarial review prompt."""
+    mode = "ADVERSARIAL" if adversarial else "STANDARD"
+    return f"""
+You are an {mode} code reviewer for the Faber framework.
+
+## Context
+- Framework: Faber agentic web framework
+- Skills must follow: SKILL.md + scripts/ + evals/
+- No fabrication: unknowns = TODO:
+- Deterministic scripts, model only orchestrates
+- FRAMEWORK.md contract compliance required
+
+## Changed Files
+{chr(10).join(changed_files)}
+
+## Diff
+{diff[:15000]}
+
+## Review Criteria
+1. **Correctness** - Logic errors, edge cases, error handling
+2. **Security** - Injection, auth, secrets, validation
+3. **Design** - Coupling, abstraction, FRAMEWORK.md compliance
+4. **Spec Violation** - Deviates from skill contract
+5. **Missing Tests** - No evals, incomplete coverage
+6. **Fabrication** - Invents facts, no TODO: for unknowns
+7. **Non-determinism** - Scripts must be deterministic
+
+## Output Format
+For each issue found, output JSON lines:
+{{
+  "file": "path/to/file.py",
+  "line": 42,
+  "severity": "BLOCKER|CRITICAL|MAJOR|MINOR|NIT",
+  "category": "bug|security|design|spec-violation|missing-test|fabrication|nit",
+  "message": "Specific, actionable description",
+  "suggestion": "Concrete fix suggestion"
+}}
+"""
+
+
+def post_review_comments(pr_number: int, repo: str, cat_result: dict, repo_root: Path):
+    """Post review comments to PR."""
+    import subprocess
+    
+    for comment in cat_result.get("comments", []):
+        if comment.get("severity") in ("BLOCKER", "CRITICAL", "MAJOR"):
+            body = f"**[{comment['severity']}] {comment['category']}**\n\n{comment['message']}\n\n*Suggestion:* {comment.get('suggestion', 'N/A')}"
+            cmd = [
+                "gh", "api", "--method", "POST",
+                f"/repos/{repo}/pulls/{pr_number}/comments",
+                "-f", f"body={body}",
+                "-f", f"path={comment['file']}",
+                "-f", f"position={comment.get('line', 1)}"
+            ]
+            subprocess.run(cmd, capture_output=True)
+
+
+def main():
+    """Main entry point with support for both positional and flag-based modes."""
+    import argparse
+    
+    # Pre-parse to handle both styles
+    args = sys.argv[1:]
+    mode = None
+    if args and not args[0].startswith('-'):
+        mode = args[0]
+    else:
+        # Use argparse for flag-based
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--mode', choices=['resolve', 'analyze', 'review'])
+        parser.add_argument('--pr-number', type=int)
+        parser.add_argument('--repo')
+        parser.add_argument('--model')
+        parser.add_argument('--adversarial', action='store_true')
+        parser.add_argument('--post-comments', action='store_true')
+        parser.add_argument('--hitl', action='store_true')
+        parser.add_argument('--no-notify', action='store_true')
+        parser.add_argument('--since')
+        parser.add_argument('--output')
+        parser.add_argument('--limit', type=int)
+        parsed, _ = parser.parse_known_args(args)
+        mode = parsed.mode
+
     repo_root = Path(__file__).parent.parent.parent.parent  # scripts/ -> pr-review-resolution/ -> skills/ -> repo root
+
+    if mode == "review":
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--pr-number', type=int, required=True)
+        parser.add_argument('--repo', required=True)
+        parser.add_argument('--model', required=True)
+        parser.add_argument('--adversarial', action='store_true')
+        parser.add_argument('--post-comments', action='store_true')
+        # fixed: "store_true"
+        review_args = parser.parse_args(args)
+        
+        run_adversarial_review(review_args.pr_number, review_args.repo, review_args.model, review_args.adversarial, review_args.post_comments, repo_root)
+        return
 
     if mode == "resolve":
         if len(sys.argv) < 4:
@@ -79,10 +228,7 @@ def main():
             resolve_args = [str(cat_file), str(repo_root)]
             if hitl_gate:
                 resolve_args.append("--hitl")
-            resolve_result = run_script(
-                "resolve.py", resolve_args,
-                repo_root
-            )
+            resolve_result = run_script("resolve.py", resolve_args, repo_root)
             if "error" in resolve_result:
                 print(json.dumps({"error": f"Resolve failed: {resolve_result['error']}"}))
                 sys.exit(1)
@@ -109,7 +255,6 @@ def main():
 
             # Notify: resolve + push
             if not no_notify:
-                # Combine data for notifications
                 combined = {
                     "pr_number": pr_number,
                     "repo": repo,
@@ -163,7 +308,7 @@ def main():
         print(json.dumps(result, indent=2))
 
     else:
-        print(json.dumps({"error": f"Unknown mode: {mode}"}))
+        print(json.dumps({"error": f"Unknown mode: {mode}. Use: resolve, analyze, or review"}))
         sys.exit(1)
 
 

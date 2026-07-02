@@ -159,4 +159,47 @@ Client feedback → extended-scope ledger items (never lost in chat).
 
 ---
 
-*Canonical version. Supersedes the expedited bootstrap AGENTS.md. Human Commitizen + PR-policy additions preserved per HERMES-BRIEF.md §7 item 1.*
+## 11. PR Review Process (MANDATORY)
+
+### 11.1 Review Requirements
+**NO PR MERGES WITHOUT REVIEW.** Every PR must pass through:
+
+1. **Adversarial Review** — A different model/agent than the author reviews the code
+   - Use `pr-review-resolution` skill with `--adversarial` flag
+   - Or Copilot/GitHub reviewer (different from writing model)
+   
+2. **Human Review** — Dev reviews and explicitly approves
+   - HITL gate per §2.6
+   - Dev merges manually (no auto-merge)
+
+3. **CI Gates** — All automated checks pass
+   - Evals pass (`python -m pytest skills/<name>/evals/`)
+   - Trajectory-guard conformance
+   - Lint/type checks
+
+### 11.2 Review Workflow
+```bash
+# On PR open → auto-triggered by .github/workflows/skill-review.yml
+# 1. Adversarial review posts comments
+# 2. Author fixes comments (or defers with rationale)
+# 3. Re-review until clean
+# 4. Human review + merge
+```
+
+### 11.3 Adversarial Review Rules
+- **Different model** than writer (e.g., writer=nemotron, reviewer=claude/opus/gpt-4)
+- **Critique mode** — look for: logic errors, security issues, spec violations, missing edge cases, fabrication
+- **No rubber-stamp** — must find at least 1 issue or explicitly approve with reasoning
+- **Categories**: `bug`, `security`, `design`, `spec-violation`, `missing-test`, `fabrication`, `nit`
+
+### 11.4 Merge Checklist (Dev must verify)
+- [ ] Adversarial review completed (comments addressed or deferred with rationale)
+- [ ] Human review completed (you read the diff)
+- [ ] All evals pass locally
+- [ ] Trajectory-guard passes
+- [ ] CI green
+- [ ] You manually click "Merge" (no auto-merge)
+
+---
+
+*Canonical version.Git is the source of truth (per §2.1). All process changes go through PRs.*
