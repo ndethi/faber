@@ -69,6 +69,10 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install dependencies
+        run: |
+          pip install --no-cache-dir --quiet requests pyyaml pytest
+
       - name: Run all skill evals
         run: |
           for skill in skills/*/; do
