@@ -27,7 +27,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --quiet requests pyyaml
+          pip install --quiet requests pyyaml pytest
 
       - name: Run Adversarial Review
         id: review
