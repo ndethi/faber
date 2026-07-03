@@ -9,6 +9,7 @@ Supports modes:
 - review: Adversarial review of a PR (different model than writer)
 """
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -31,60 +32,37 @@ def run_script(script: str, args: List[str], repo_root: Path) -> Dict[str, Any]:
 def run_adversarial_review(pr_number: int, repo: str, model: str, adversarial: bool, post_comments: bool, repo_root: Path):
     """Run adversarial review on a PR using a different model."""
     import subprocess
-    
+
     print(f"🔍 Running adversarial review on PR #{pr_number} with {model}", file=sys.stderr)
-    
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpdir = Path(tmpdir)
-        
-        # Step 1: Fetch PR diff and files
-        print("📥 Fetching PR diff...", file=sys.stderr)
-        diff_file = tmpdir / "pr.diff"
-        diff_cmd = ["gh", "pr", "diff", str(pr_number), "--repo", repo]
-        diff_result = subprocess.run(diff_cmd, capture_output=True, text=True)
-        if diff_result.returncode != 0:
-            print(json.dumps({"error": f"Failed to fetch diff: {diff_result.stderr}"}))
-            sys.exit(1)
-        diff_file.write_text(diff_result.stdout)
-        
-        # Step 2: Get changed files
-        files_cmd = ["gh", "pr", "view", str(pr_number), "--repo", repo, "--json", "files"]
-        files_result = subprocess.run(files_cmd, capture_output=True, text=True)
-        if files_result.returncode != 0:
-            print(json.dumps({"error": f"Failed to fetch files: {files_result.stderr}"}))
-            sys.exit(1)
-        files_data = json.loads(files_result.stdout)
-        changed_files = [f["path"] for f in files_data.get("files", [])]
-        
-        # Step 3: Run adversarial categorization
-        print("🏷️  Running adversarial categorization...", file=sys.stderr)
-        
-        # Fetch comments first
-        fetch_result = run_script("fetch_comments.py", [str(pr_number), repo], repo_root)
-        if "error" not in fetch_result:
-            fetch_file = tmpdir / "fetched.json"
-            fetch_file.write_text(json.dumps(fetch_result))
-            
-            # Categorize with adversarial flag
-            cat_result = run_script("categorize.py", [str(fetch_file), "--adversarial"], repo_root)
-            if "error" not in cat_result:
-                cat_file = tmpdir / "categorized.json"
-                cat_file.write_text(json.dumps(cat_result))
-                
-                if post_comments:
-                    print("💬 Posting review comments...", file=sys.stderr)
-                    post_review_comments(pr_number, repo, cat_result, repo_root)
-        
-        output = {
-            "mode": "review",
-            "pr_number": pr_number,
-            "repo": repo,
-            "model": model,
-            "adversarial": adversarial,
-            "changed_files": changed_files,
-            "status": "completed",
-        }
-        print(json.dumps(output, indent=2))
+
+    # Use the new adversarial_review.py script
+    cmd = [
+        sys.executable,
+        str(repo_root / "skills" / "pr-review-resolution" / "scripts" / "adversarial_review.py"),
+        "--pr-number", str(pr_number),
+        "--repo", repo,
+        "--model", model,
+    ]
+    if post_comments:
+        cmd.append("--post-comments")
+
+    env = os.environ.copy()
+    env["GITHUB_TOKEN"] = os.environ.get("GITHUB_TOKEN", "")
+    env["OPENROUTER_API_KEY"] = os.environ.get("OPENROUTER_API_KEY", "")
+
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=repo_root, env=env, timeout=300)
+
+    if result.returncode != 0:
+        print(f"Adversarial review failed: {result.stderr}", file=sys.stderr)
+        try:
+            error_data = json.loads(result.stdout.strip())
+            print(json.dumps(error_data))
+        except:
+            print(json.dumps({"error": result.stderr or result.stdout}))
+        sys.exit(1)
+
+    # Output the result
+    print(result.stdout.strip())
 
 
 def build_adversarial_prompt(diff: str, changed_files: list, adversarial: bool) -> str:

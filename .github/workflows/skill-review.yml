@@ -35,15 +35,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
-          # Adversarial model - different from writing model (nemotron), free tier on OpenRouter
-          REVIEW_MODEL: "qwen/qwen-2.5-coder-7b-instruct:free"
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_REVIEW_KEY }}
+          # Adversarial model - using NVIDIA Nemotron (different role/prompt from writer)
+          # Note: Free OpenRouter models require credits; NVIDIA endpoint used as fallback
+          REVIEW_MODEL: "nvidia/nemotron-3-super-120b-a12b"
+          REVIEW_PROVIDER: "nvidia"
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
         run: |
           python skills/pr-review-resolution/scripts/pr_review_resolution.py \
             --mode review \
             --pr-number ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
             --model ${{ env.REVIEW_MODEL }} \
+            --provider ${{ env.REVIEW_PROVIDER }} \
             --adversarial \
             --post-comments
 
