@@ -25,8 +25,6 @@ DEFAULT_LEDGER = {
     "extended": [],
 }
 
-# TODO: Test review workflow - this comment should trigger style/doc review
-
 
 def load_ledger(ledger_path: Path) -> Dict[str, Any]:
     """Load scope ledger, creating default if not exists."""
