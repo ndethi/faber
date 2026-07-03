@@ -35,8 +35,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
-          # Adversarial model - different from writing model (nemotron)
-          REVIEW_MODEL: "anthropic/claude-opus-4"
+          # Adversarial model - different from writing model (nemotron), free tier on OpenRouter
+          REVIEW_MODEL: "qwen/qwen-2.5-coder-7b-instruct:free"
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_REVIEW_KEY }}
         run: |
           python skills/pr-review-resolution/scripts/pr_review_resolution.py \
             --mode review \
