@@ -29,7 +29,7 @@ def run_script(script: str, args: List[str], repo_root: Path) -> Dict[str, Any]:
         return {"error": "Invalid JSON output", "stdout": result.stdout[:500]}
 
 
-def run_adversarial_review(pr_number: int, repo: str, model: str, adversarial: bool, post_comments: bool, repo_root: Path):
+def run_adversarial_review(pr_number: int, repo: str, model: str, provider: str, adversarial: bool, post_comments: bool, repo_root: Path):
     """Run adversarial review on a PR using a different model."""
     import subprocess
 
@@ -42,13 +42,17 @@ def run_adversarial_review(pr_number: int, repo: str, model: str, adversarial: b
         "--pr-number", str(pr_number),
         "--repo", repo,
         "--model", model,
+        "--provider", provider,
     ]
     if post_comments:
         cmd.append("--post-comments")
 
     env = os.environ.copy()
+    if provider == 'nvidia':
+        env["NVIDIA_API_KEY"] = os.environ.get("NVIDIA_API_KEY", "")
+    else:
+        env["OPENROUTER_API_KEY"] = os.environ.get("OPENROUTER_API_KEY", "")
     env["GITHUB_TOKEN"] = os.environ.get("GITHUB_TOKEN", "")
-    env["OPENROUTER_API_KEY"] = os.environ.get("OPENROUTER_API_KEY", "")
 
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=repo_root, env=env, timeout=300)
 
@@ -156,12 +160,13 @@ def main():
         parser.add_argument('--pr-number', type=int, required=True)
         parser.add_argument('--repo', required=True)
         parser.add_argument('--model', required=True)
+        parser.add_argument('--provider', choices=['openrouter', 'nvidia'], default='nvidia')
         parser.add_argument('--adversarial', action='store_true')
         parser.add_argument('--post-comments', action='store_true')
         # fixed: "store_true"
         review_args = parser.parse_args(args)
         
-        run_adversarial_review(review_args.pr_number, review_args.repo, review_args.model, review_args.adversarial, review_args.post_comments, repo_root)
+        run_adversarial_review(review_args.pr_number, review_args.repo, review_args.model, review_args.provider, review_args.adversarial, review_args.post_comments, repo_root)
         return
 
     if mode == "resolve":
