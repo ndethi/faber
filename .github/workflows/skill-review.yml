@@ -27,7 +27,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --no-cache-dir --quiet requests pyyaml pytest
+          pip install --no-cache-dir --quiet requests pyyaml pytest jsonschema
 
       - name: Run Adversarial Review
         id: review
@@ -71,7 +71,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --no-cache-dir --quiet requests pyyaml pytest
+          pip install --no-cache-dir --quiet requests pyyaml pytest jsonschema
 
       - name: Run all skill evals
         run: |
