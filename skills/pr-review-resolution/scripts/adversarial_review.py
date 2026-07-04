@@ -110,7 +110,7 @@ def call_nvidia_nemotron(prompt: str, api_key: str) -> str:
         "Content-Type": "application/json",
     }
     data = {
-        "model": "nvidia/nemotron-3-ultra",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.1,
         "max_tokens": 4000,
@@ -233,7 +233,7 @@ def main():
             sys.exit(1)
         try:
             llm_response = call_nvidia_nemotron(prompt, nvidia_key)
-            model_used = "nvidia/nemotron-3-ultra"
+            model_used = "nvidia/nemotron-3-ultra-550b-a55b"
         except Exception as e2:
             print(json.dumps({"error": f"Both OpenRouter and NVIDIA failed: {e2}"}))
             sys.exit(1)
