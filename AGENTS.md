@@ -57,6 +57,9 @@ Unknown facts, sources, or capabilities = `TODO:` in the artifact + Telegram sur
 ### 2.10 Respect `/stop`
 On `/stop` (TUI or Telegram gateway): halt cleanly, post one-line status to Telegram, exit loop.
 
+### 2.11 PM & GitHub operations route through `skills/pm-github/`
+Do not open issues, create tags, edit project fields, or bulk-label via ad-hoc scripts. Every PM write is a proposal until human-approved. `.github/pm-config.yaml` overrides skill defaults per repo.
+
 ---
 
 ## 3. Skill Contract (per FRAMEWORK.md §1)

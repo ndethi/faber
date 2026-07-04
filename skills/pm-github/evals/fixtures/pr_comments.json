@@ -1,0 +1,182 @@
+[
+  {
+    "id": 1001,
+    "body": "This causes a production outage - data loss on user records",
+    "path": "src/api/users.py",
+    "line": 42,
+    "commit_id": "abc123",
+    "user": {"login": "reviewer1"},
+    "created_at": "2024-01-15T10:00:00Z"
+  },
+  {
+    "id": 1002,
+    "body": "SECURITY: SQL injection vulnerability in user search endpoint",
+    "path": "src/api/search.py",
+    "line": 15,
+    "commit_id": "abc123",
+    "user": {"login": "security-team"},
+    "created_at": "2024-01-15T10:05:00Z"
+  },
+  {
+    "id": 1003,
+    "body": "CRITICAL: Authentication bypass allows admin access without credentials",
+    "path": "src/auth/middleware.py",
+    "line": 88,
+    "commit_id": "def456",
+    "user": {"login": "reviewer2"},
+    "created_at": "2024-01-15T10:10:00Z"
+  },
+  {
+    "id": 1004,
+    "body": "The checkout flow fails silently when inventory is empty",
+    "path": "src/checkout/flow.py",
+    "line": 200,
+    "commit_id": "def456",
+    "user": {"login": "qa-engineer"},
+    "created_at": "2024-01-15T10:15:00Z"
+  },
+  {
+    "id": 1005,
+    "body": "Major performance regression - API latency increased 5x",
+    "path": "src/api/middleware.py",
+    "line": 50,
+    "commit_id": "ghi789",
+    "user": {"login": "perf-team"},
+    "created_at": "2024-01-15T10:20:00Z"
+  },
+  {
+    "id": 1006,
+    "body": "Accessibility violation: missing ARIA labels on all form inputs",
+    "path": "src/ui/forms.tsx",
+    "line": 120,
+    "commit_id": "ghi789",
+    "user": {"login": "a11y-reviewer"},
+    "created_at": "2024-01-15T10:25:00Z"
+  },
+  {
+    "id": 1007,
+    "body": "Consider adding pagination to this endpoint for large datasets",
+    "path": "src/api/list.py",
+    "line": 30,
+    "commit_id": "jkl012",
+    "user": {"login": "reviewer3"},
+    "created_at": "2024-01-15T10:30:00Z"
+  },
+  {
+    "id": 1008,
+    "body": "This function is doing too much - should be split into smaller units",
+    "path": "src/utils/helpers.py",
+    "line": 75,
+    "commit_id": "jkl012",
+    "user": {"login": "reviewer3"},
+    "created_at": "2024-01-15T10:35:00Z"
+  },
+  {
+    "id": 1009,
+    "body": "nit: trailing whitespace on line 42",
+    "path": "src/main.py",
+    "line": 42,
+    "commit_id": "mno345",
+    "user": {"login": "nitpicker"},
+    "created_at": "2024-01-15T10:40:00Z"
+  },
+  {
+    "id": 1010,
+    "body": "nitpick: prefer single quotes for consistency",
+    "path": "src/config.py",
+    "line": 10,
+    "commit_id": "mno345",
+    "user": {"login": "style-bot"},
+    "created_at": "2024-01-15T10:45:00Z"
+  },
+  {
+    "id": 1011,
+    "body": "LGTM! 👍",
+    "path": null,
+    "line": null,
+    "commit_id": "pqr678",
+    "user": {"login": "approver"},
+    "created_at": "2024-01-15T10:50:00Z"
+  },
+  {
+    "id": 1012,
+    "body": "Looks good to me, ship it",
+    "path": null,
+    "line": null,
+    "commit_id": "pqr678",
+    "user": {"login": "approver2"},
+    "created_at": "2024-01-15T10:55:00Z"
+  },
+  {
+    "id": 1013,
+    "body": "Why did you choose this approach over using a decorator?",
+    "path": "src/decorators.py",
+    "line": 25,
+    "commit_id": "stu901",
+    "user": {"login": "curious-dev"},
+    "created_at": "2024-01-15T11:00:00Z"
+  },
+  {
+    "id": 1014,
+    "body": "What's the performance impact of this change?",
+    "path": "src/optimize.py",
+    "line": 100,
+    "commit_id": "stu901",
+    "user": {"login": "perf-curious"},
+    "created_at": "2024-01-15T11:05:00Z"
+  },
+  {
+    "id": 1015,
+    "body": "Might be worth adding a test for the edge case",
+    "path": "src/edge_cases.py",
+    "line": 55,
+    "commit_id": "vwx234",
+    "user": {"login": "test-advocate"},
+    "created_at": "2024-01-15T11:10:00Z"
+  },
+  {
+    "id": 1016,
+    "body": "Something feels off about this implementation",
+    "path": "src/unclear.py",
+    "line": 10,
+    "commit_id": "vwx234",
+    "user": {"login": "vague-reviewer"},
+    "created_at": "2024-01-15T11:15:00Z"
+  },
+  {
+    "id": 1017,
+    "body": "We should really add support for webhooks here",
+    "path": "src/webhooks.py",
+    "line": 1,
+    "commit_id": "yz789",
+    "user": {"login": "feature-requester"},
+    "created_at": "2024-01-15T11:20:00Z"
+  },
+  {
+    "id": 1018,
+    "body": "This would be much better with a caching layer",
+    "path": "src/cache.py",
+    "line": 200,
+    "commit_id": "yz789",
+    "user": {"login": "perf-engineer"},
+    "created_at": "2024-01-15T11:25:00Z"
+  },
+  {
+    "id": 1019,
+    "body": "Unused import on line 15",
+    "path": "src/imports.py",
+    "line": 15,
+    "commit_id": "abc999",
+    "user": {"login": "linter-bot"},
+    "created_at": "2024-01-15T11:30:00Z"
+  },
+  {
+    "id": 1020,
+    "body": "Missing error handling for network timeout case",
+    "path": "src/network.py",
+    "line": 80,
+    "commit_id": "abc999",
+    "user": {"login": "reliability-engineer"},
+    "created_at": "2024-01-15T11:35:00Z"
+  }
+]
