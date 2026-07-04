@@ -104,6 +104,7 @@ def call_openrouter(model: str, prompt: str, api_key: str, max_retries: int = 3)
 def call_nvidia_nemotron(prompt: str, api_key: str) -> str:
     """Call NVIDIA Nemotron API as fallback."""
     import requests
+    import re
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -126,7 +127,7 @@ def call_nvidia_nemotron(prompt: str, api_key: str) -> str:
     result = response.json()
     content = result["choices"][0]["message"]["content"]
 
-    # Nemotron includes reasoning content - strip <think> tags
+    # Nemotron includes reasoning in  tags - strip it
     content = re.sub(r"", "", content, flags=re.DOTALL)
     return content.strip()
 
@@ -155,26 +156,52 @@ def parse_llm_response(response: str) -> List[ReviewIssue]:
     return issues
 
 
-def post_review_comment(pr_number: int, repo: str, issue: ReviewIssue, github_token: str) -> bool:
-    """Post a single review comment to PR using GitHub API."""
-    body = f"**[{issue.severity}] {issue.category}**\n\n{issue.message}\n\n*Suggestion:* {issue.suggestion}"
+def post_review_comments(pr_number: int, repo: str, issues: List[ReviewIssue], github_token: str) -> int:
+    """Post all review comments as a single review."""
+    if not issues:
+        return 0
 
-    # Use modern GitHub API with line + side
+    # Get the latest commit SHA
+    cmd_sha = ["gh", "api", f"/repos/{repo}/pulls/{pr_number}", "-q", ".head.sha"]
+    env = os.environ.copy()
+    env["GH_TOKEN"] = github_token
+    sha_result = subprocess.run(cmd_sha, capture_output=True, text=True, env=env)
+    if sha_result.returncode != 0:
+        print(f"Failed to get commit SHA: {sha_result.stderr}", file=sys.stderr)
+        return 0
+    commit_sha = sha_result.stdout.strip()
+
+    # Build comments array
+    import json as json_mod
+    comments = []
+    for issue in issues:
+        body = f"**[{issue.severity}] {issue.category}**\n\n{issue.message}\n\n*Suggestion:* {issue.suggestion}"
+        comments.append({
+            "path": issue.file,
+            "position": issue.line,
+            "body": body,
+            "side": "RIGHT"
+        })
+
+    review_data = {
+        "commit_id": commit_sha,
+        "body": f"Adversarial review found {len(issues)} issues",
+        "event": "COMMENT",
+        "comments": comments
+    }
+
     cmd = [
         "gh", "api", "--method", "POST",
-        f"/repos/{repo}/pulls/{pr_number}/comments",
-        "-f", f"body={body}",
-        "-f", f"path={issue.file}",
-        "-f", f"line={issue.line}",
-        "-f", "side=RIGHT",
+        f"/repos/{repo}/pulls/{pr_number}/reviews",
+        "--input", "-",
     ]
     env = os.environ.copy()
     env["GH_TOKEN"] = github_token
-    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    result = subprocess.run(cmd, capture_output=True, text=True, env=env, input=json_mod.dumps(review_data))
     if result.returncode != 0:
-        print(f"Failed to post comment: {result.stderr}", file=sys.stderr)
-        return False
-    return True
+        print(f"Failed to post review: {result.stderr}", file=sys.stderr)
+        return 0
+    return len(issues)
 
 
 def main():
@@ -247,9 +274,7 @@ def main():
     posted = 0
     if args.post_comments and issues:
         print("💬 Posting review comments...", file=sys.stderr)
-        for issue in issues:
-            if post_review_comment(args.pr_number, args.repo, issue, github_token):
-                posted += 1
+        posted = post_review_comments(args.pr_number, args.repo, issues, github_token)
 
     # Output result
     output = {
