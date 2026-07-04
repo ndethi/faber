@@ -142,3 +142,43 @@
 - **Next:** After BG-004, consider BG-005 (cross-cutting) or BG-012 (pr-review skill separate PR)
 
 ---
+
+## Iteration 6 — 2026-07-04T00:00:00Z
+**Action:** Cross-cutting skills batch (BG-005)
+- **Source:** State Report — trajectory-guard, dashboard, model-route, scope-ledger, skill-author
+- **Skills delivered:**
+  - `trajectory-guard` (PR #13) — process-level drift control via expected vs actual trajectory diff
+  - `dashboard` (PR #14) — management dashboard from telemetry data
+  - `model-route` (PR #15) — model routing with local-vs-frontier graduation gates
+  - `scope-ledger` (PR #16) — baseline vs extended scope tracking with cost attribution
+  - `skill-author` (PR #18) — meta-skill for governed self-extension (SKILL.md + scripts/ + evals/ generation)
+- **Result:** ✓ All 5 skills merged; ✓ all evals pass; ✓ BG-005 marked 5/5 done
+- **Next:** Iteration 7 — PR Review Skill (BG-012)
+
+---
+
+## Iteration 7 — 2026-07-04T10:00:00Z
+**Action:** PR Review Skill (BG-012) — automated first-pass PR reviews
+- **Source:** User request — automated PR review to reduce human reviewer burden
+- **Skill name:** `pr-review` (cross-cutting, runs on every PR targeting dev)
+- **Spec reference:** FRAMEWORK.md §1 (skill contract), §2 (cross-cutting skills), AGENTS.md §2.3 (PR discipline), §11 (PR Review Process)
+- **Plan:**
+  1. **Draft SKILL.md** at `skills/pr-review/SKILL.md` with:
+     - Description: "Automated PR reviewer: fetches PR diff, runs deterministic checks (lint, tests, schema, trajectory, branch model, commit style, security), performs semantic review against FRAMEWORK.md/AGENTS.md/HERMES-BRIEF.md, posts structured GitHub review with inline comments"
+     - Inputs: PR_NUMBER, REPO, SPEC_FILES, HITL_GATE, CHECK_TRAJECTORY
+     - Outputs: review_report.json (verdict, issues, deterministic_checks)
+  2. **Implement scripts/**:
+     - `fetch_pr.py` — gh API for PR metadata, diff, CI checks
+     - `review.py` — deterministic checks + LLM semantic review (adversarial model)
+     - `post_review.py` — submit GitHub review with inline comments
+  3. **Add evals/**: test with fixture PR diffs, assert categorization accuracy ≥ 0.9
+  4. **Run plan** in `runs/pr-review-plan.json` for orchestrator integration
+- **Dependencies:** orchestrator (BG-003), trajectory-guard, gh CLI auth, skill-review.yml workflow
+- **Constraints:**
+  - Per AGENTS.md §2.7: no autonomous skill creation → manual PR
+  - Per FRAMEWORK.md §1: must have evals
+  - HITL gate: human reviews/approves PR after automated review
+- **Result:** ✓ skills/pr-review/ created with SKILL.md, fetch_pr.py, review.py, post_review.py, test_pr_review.py; ✓ evals pass; ✓ PR #19 open for review
+- **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit
+
+---

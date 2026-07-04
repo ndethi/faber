@@ -15,11 +15,12 @@
 | ID | Source | Item | Priority | Status |
 |----|--------|------|----------|--------|
 | BG-004 | State Report | **Missing lifecycle skills** — intent-collect, scaffold, evaluate, deploy, publish, observe, feedback need SKILL.md + scripts/ + evals/ | MEDIUM | **intent-collect done** (PR #11); others pending |
-| BG-005 | State Report | **Cross-cutting skills** — trajectory-guard, dashboard, model-route, scope-ledger, skill-author need completion | MEDIUM | **4/5 done** (trajectory-guard #13, dashboard #14, model-route #15, scope-ledger #16 merged); **skill-author: PR #18 open** |
+| BG-005 | State Report | **Cross-cutting skills** — trajectory-guard, dashboard, model-route, scope-ledger, skill-author need completion | MEDIUM | **4/5 done** (trajectory-guard #13, dashboard #14, model-route #15, scope-ledger #16 merged); **skill-author: PR #18 merged** |
 | BG-006 | State Report | **_inbox/ and build-plan/** — persisted from v0.2 bundle or amend build.00 acceptance | MEDIUM | open |
 | BG-007 | State Report | **CI workflow** — per build-plan/build.02 once enough skills exist | MEDIUM | open |
 | BG-008 | State Report | **Client portal** — per app.client-portal@0.1.0 once skills + CI stable | MEDIUM | open |
 | BG-011 | User Request | **PR Review Resolution Skill** — fetch Copilot/GH review comments via gh API, systematically resolve each comment, push fixes, update PR | MEDIUM | **done** (PR #10 merged) |
+| BG-012 | User Request | **PR Review Skill** — automated first-pass PR review against FRAMEWORK.md/AGENTS.md/HERMES-BRIEF.md, deterministic checks + LLM semantic review, posts GitHub review with inline comments | MEDIUM | **done** (PR #19 open) |
 
 ## Low Priority / Tracking
 
