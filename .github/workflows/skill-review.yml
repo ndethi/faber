@@ -36,15 +36,14 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
           # Adversarial model - different from writing model (nemotron), free tier on OpenRouter
-          REVIEW_MODEL: "qwen/qwen-2.5-coder-7b-instruct:free"
+          REVIEW_MODEL: "qwen/qwen3-coder:free"
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_REVIEW_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
         run: |
-          python skills/pr-review-resolution/scripts/pr_review_resolution.py \
-            --mode review \
+          python skills/pr-review-resolution/scripts/adversarial_review.py \
             --pr-number ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
             --model ${{ env.REVIEW_MODEL }} \
-            --adversarial \
             --post-comments
 
       - name: Review Gate Summary
