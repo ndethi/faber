@@ -134,34 +134,57 @@ def call_nvidia_nemotron(prompt: str, api_key: str, max_retries: int = 2) -> str
         result = response.json()
         content = result["choices"][0]["message"]["content"]
 
-        # Nemotron includes reasoning in  tags - strip it
-        content = re.sub(r"", "", content, flags=re.DOTALL)
+        # Nemotron includes reasoning in <thinking> tags - strip it
+        content = re.sub(r"<thinking>.*?</thinking>", "", content, flags=re.DOTALL)
         return content.strip()
 
     raise RuntimeError(f"NVIDIA unavailable after {max_retries} retries")
 
 
 def parse_llm_response(response: str) -> List[ReviewIssue]:
-    """Parse LLM response into ReviewIssue objects."""
+    """Parse LLM response into ReviewIssue objects.
+    
+    Handles multiple JSON objects per line, markdown code blocks, and extra text.
+    """
     issues = []
-    for line in response.strip().split("\n"):
-        line = line.strip()
-        if not line:
-            continue
+    
+    # Find all JSON-like objects in the response by tracking balanced braces
+    json_objects = []
+    brace_count = 0
+    start_idx = None
+    
+    for i, char in enumerate(response):
+        if char == '{':
+            if brace_count == 0:
+                start_idx = i
+            brace_count += 1
+        elif char == '}':
+            if brace_count > 0:
+                brace_count -= 1
+                if brace_count == 0 and start_idx is not None:
+                    json_objects.append(response[start_idx:i+1])
+                    start_idx = None
+    
+    # Parse each extracted JSON object
+    for obj_str in json_objects:
         try:
-            data = json.loads(line)
+            data = json.loads(obj_str)
             if data.get("status") == "no_issues":
                 continue
-            issues.append(ReviewIssue(
-                file=data["file"],
-                line=int(data["line"]),
-                severity=data["severity"],
-                category=data["category"],
-                message=data["message"],
-                suggestion=data.get("suggestion", "N/A"),
-            ))
+            # Validate required fields
+            required = ["file", "line", "severity", "category", "message"]
+            if all(k in data for k in required):
+                issues.append(ReviewIssue(
+                    file=data["file"],
+                    line=int(data["line"]),
+                    severity=data["severity"],
+                    category=data["category"],
+                    message=data["message"],
+                    suggestion=data.get("suggestion", "N/A"),
+                ))
         except (json.JSONDecodeError, KeyError, ValueError) as e:
-            print(f"Warning: Failed to parse line: {line[:100]}... ({e})", file=sys.stderr)
+            print(f"Warning: Failed to parse JSON object: {obj_str[:100]}... ({e})", file=sys.stderr)
+    
     return issues
 
 
