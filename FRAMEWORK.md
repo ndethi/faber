@@ -30,11 +30,11 @@ Each lifecycle stage is packaged as an Agent Skill: a `SKILL.md` (YAML frontmatt
                                                     scope-ledger · dashboard
                                                     meta: skill-author
 ```
-
-**Library**
-- *Lifecycle:* `intent-collect` · `scaffold` · `build` · `evaluate` · `deploy` · `publish` · `observe` · `feedback`
-- *Cross-cutting:* `trajectory-guard` · `model-route` · `scope-ledger` · `dashboard`
-- *Meta:* `skill-author`
+| Category | Skills |
+|----------|--------|
+| Lifecycle | `intent-collect` · `scaffold` · `build` · `evaluate` · `deploy` · `publish` · `observe` · `feedback` |
+| Cross-cutting | `trajectory-guard` · `model-route` · `scope-ledger` · `dashboard` · `pm-github` |
+| Meta | `skill-author` |
 
 An **orchestrator** composes lifecycle skills per a run plan; cross-cutting skills wrap every run.
 
@@ -128,15 +128,15 @@ The system grows its own library, under human control.
 
 Use the already-distilled Rohaki context as the **scaling test**, not the goal: run `intent-collect` over it, generate `trajectory.md`, execute the lifecycle, and measure both **acceptance** and **trajectory conformance**. If the framework can drive Rohaki end-to-end under `ordered`/`exact` strictness, it scales. Keep Rohaki artifacts in a `fixtures/` dir, isolated from framework code.
 
-## 12. Build order (what the bootstrap prompt produces)
+## 12. Project management as a skill
 
-1. Repo + registry + orchestrator + `AGENTS.md`.
-2. `intent-collect` (emits spec + trajectory + scope baseline).
-3. `scaffold` · `build` · `evaluate`.
-4. `deploy` · `publish`.
-5. `observe` · `feedback` (post-deploy loop).
-6. `trajectory-guard` + `dashboard` (observability).
-7. `skill-author` (meta, PR/HITL).
-8. `model-route` + `scope-ledger` (cost + commercial).
+`pm-github` is a cross-cutting Faber skill that owns all GitHub project-management operations. Unlike traditional project boards (Jira, Linear, GitHub Projects UI), pm-github encodes PM governance as **deterministic, versioned, auditable code**:
 
-Each is specified by a prompt-registry entry in `/prompts`. Build one skill per PR; each PR references its registry `id@version`.
+- **Portable**: the skill is a folder (`skills/pm-github/`) that lifts into any repo — no vendor lock-in.
+- **PR-gated**: every write (issue, label, project field, release) is a *proposal* by default (`dry-run=True`). Real writes require explicit `--apply` or a gated workflow. This enforces "agents propose, humans dispose" (AGENTS.md §2.6).
+- **No template staleness**: label taxonomy, field schemas, and view definitions live in `.github/pm-config.yaml` (per-repo) merging over `skills/pm-github/config/defaults.yaml` (skill-level). When the skill evolves, `sync-labels` and `bootstrap-project` bring repos current in one command.
+- **Deterministic classification**: PR review comments → issues uses a keyword rubric (no LLM), so the same comment always yields the same (severity, type). Ambiguous comments fall back to `Medium`/`needs-triage` — never guessed.
+- **Idempotent & auditable**: every operation carries a SHA256 dedup key (`source_repo:pr:comment_id`). Re-running never duplicates. All writes append to `runs/hermes/pm-log.jsonl` with timestamp, actor, and dry-run flag.
+- **Roadmap as code**: milestones and roadmaps source from `docs/roadmap.md` (SSOT), not a proprietary board. The skill reads/writes this file, keeping human and machine views in sync.
+
+This design makes PM operations **composable** (orchestrator can invoke `pm-github` alongside `build`, `evaluate`, etc.), **observable** (telemetry captures every proposal and application), and **self-documenting** (the skill *is* the process spec).

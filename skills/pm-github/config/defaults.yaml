@@ -1,0 +1,247 @@
+# pm-github Skill Configuration Defaults
+# This file contains all default configuration values for the pm-github skill.
+# Repository-level overrides can be placed in .github/pm-config.yaml
+# Configuration is merged: repo config overrides these defaults.
+
+# GitHub repository configuration
+github:
+  # Repository in 'owner/name' format (required, no default)
+  # repo: "owner/repo"
+  # Default dry-run mode for all write operations (agents propose, humans dispose)
+  dry_run: true
+  # Whether to post proposal comments on PRs (requires workflow setup)
+  post_pr_comments: true
+  # Minimum confidence threshold for proposing issues from PR comments (0.0-1.0)
+  min_confidence: 0.5
+
+# File system paths (relative to repo root)
+paths:
+  # Directory for proposal artifacts
+  proposals: "runs/hermes/pm-proposals"
+  # Audit log for all write operations
+  audit_log: "runs/hermes/pm-log.jsonl"
+  # Configuration file location
+  config: ".github/pm-config.yaml"
+
+# Label taxonomy for issue classification
+# Each label: name, color (hex without #), description
+labels:
+  taxonomy:
+    # Severity labels
+    - name: "critical"
+      color: "B60205"
+      description: "Production-breaking, data loss, security vulnerability"
+    - name: "high"
+      color: "D93F0B"
+      description: "Major functionality broken, significant performance regression"
+    - name: "medium"
+      color: "FBCA04"
+      description: "Functional issue, missing feature, code quality concern"
+    - name: "low"
+      color: "0E8A16"
+      description: "Nitpick, style, minor improvement, documentation typo"
+
+    # Type labels
+    - name: "bug"
+      color: "D73A4A"
+      description: "Something isn't working as intended"
+    - name: "enhancement"
+      color: "A2EEEF"
+      description: "New feature or improvement request"
+    - name: "documentation"
+      color: "0075CA"
+      description: "Documentation improvements or fixes"
+    - name: "refactor"
+      color: "B088D9"
+      description: "Code restructuring without behavior change"
+    - name: "security"
+      color: "FF0000"
+      description: "Security vulnerability or hardening"
+    - name: "needs-triage"
+      color: "F9D0C4"
+      description: "Requires human review to classify"
+
+    # Additional workflow labels
+    - name: "proposed"
+      color: "C2E0C6"
+      description: "Issue proposed by pm-github, awaiting human approval"
+    - name: "approved"
+      color: "28A745"
+      description: "Proposal approved by human, ready for creation"
+    - name: "wontfix"
+      color: "FFFFFF"
+      description: "Proposal reviewed and declined"
+
+# GitHub Project v2 configuration
+project:
+  # Project owner (user or org) - defaults to repo owner
+  # owner: "owner"
+  # Project title
+  title: "Faber Project Board"
+  # Project description/body
+  body: "Auto-generated project board managed by pm-github skill"
+  # Custom fields to create in the project
+  fields:
+    - name: "Status"
+      type: "SINGLE_SELECT"
+      options:
+        - "Backlog"
+        - "Ready"
+        - "In Progress"
+        - "In Review"
+        - "Done"
+    - name: "Priority"
+      type: "SINGLE_SELECT"
+      options:
+        - "Critical"
+        - "High"
+        - "Medium"
+        - "Low"
+    - name: "Severity"
+      type: "SINGLE_SELECT"
+      options:
+        - "Critical"
+        - "High"
+        - "Medium"
+        - "Low"
+    - name: "Type"
+      type: "SINGLE_SELECT"
+      options:
+        - "Bug"
+        - "Enhancement"
+        - "Documentation"
+        - "Refactor"
+        - "Security"
+        - "Needs Triage"
+    - name: "Target Release"
+      type: "TEXT"
+      options: []
+    - name: "Epic"
+      type: "TEXT"
+      options: []
+
+  # Views to create in the project
+  views:
+    - name: "By Status"
+      type: "BOARD"
+      group_by: "Status"
+    - name: "By Priority"
+      type: "TABLE"
+      sort_by: "Priority"
+      sort_direction: "DESC"
+    - name: "By Type"
+      type: "TABLE"
+      group_by: "Type"
+    - name: "All Issues"
+      type: "TABLE"
+      filters: []
+    - name: "Current Sprint"
+      type: "BOARD"
+      group_by: "Status"
+      filters:
+        - field: "Priority"
+          operator: "IN"
+          values: ["Critical", "High"]
+
+# Release management configuration
+release:
+  # Branch to create releases from
+  target_branch: "main"
+  # Whether to generate release notes from merged PRs
+  generate_notes: true
+  # Label to identify PRs for release notes
+  release_label: "release-note"
+  # Categories for release notes
+  categories:
+    - label: "enhancement"
+      title: "✨ Features"
+    - label: "bug"
+      title: "🐛 Bug Fixes"
+    - label: "documentation"
+      title: "📝 Documentation"
+    - label: "security"
+      title: "🔒 Security"
+    - label: "refactor"
+      title: "🔧 Refactoring"
+
+# PR review comment classification configuration
+classification:
+  # Minimum confidence to include in proposals (0.0-1.0)
+  min_confidence: 0.5
+  # Whether to include low-confidence items as "needs-triage"
+  include_low_confidence: true
+  # Severity keyword weights (higher = more likely to match)
+  severity_keywords:
+    critical:
+      - "crash"
+      - "data loss"
+      - "security vulnerability"
+      - "rce"
+      - "sql injection"
+      - "auth bypass"
+      - "production outage"
+      - "blocker"
+    high:
+      - "broken"
+      - "fails"
+      - "performance regression"
+      - "accessibility"
+      - "memory leak"
+      - "major bug"
+    low:
+      - "nit"
+      - "nitpick"
+      - "style"
+      - "formatting"
+      - "typo"
+      - "whitespace"
+      - "unused import"
+  # Type keyword weights
+  type_keywords:
+    security:
+      - "security"
+      - "vulnerability"
+      - "injection"
+      - "xss"
+      - "csrf"
+      - "auth"
+      - "secret"
+      - "credential"
+    bug:
+      - "bug"
+      - "error"
+      - "exception"
+      - "crash"
+      - "fail"
+      - "broken"
+      - "regression"
+    enhancement:
+      - "enhancement"
+      - "feature"
+      - "improve"
+      - "add"
+      - "support"
+      - "implement"
+    documentation:
+      - "doc"
+      - "documentation"
+      - "readme"
+      - "typo"
+      - "comment"
+    refactor:
+      - "refactor"
+      - "restructure"
+      - "cleanup"
+      - "simplify"
+      - "technical debt"
+
+# Audit and logging
+audit:
+  # Enable audit logging for all operations
+  enabled: true
+  # Log file path (relative to repo root)
+  log_file: "runs/hermes/pm-log.jsonl"
+  # Include full_context: |
+  This configuration file is the skill-level defaults for pm-github.
+  Repository-specific overrides should be placed in .github/pm-config.yaml
+  which will be merged over these defaults.

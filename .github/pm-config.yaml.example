@@ -1,0 +1,147 @@
+# pm-github Repository Configuration Example
+# Copy this file to .github/pm-config.yaml and customize for your repository.
+# This file overrides skill-level defaults from skills/pm-github/config/defaults.yaml
+#
+# See skills/pm-github/config/defaults.yaml for all available options and defaults.
+
+# GitHub repository (REQUIRED - no default)
+github:
+  repo: "your-org/your-repo"  # e.g., "ndethi/faber"
+  # Override dry-run mode (default: true - agents propose, humans dispose)
+  # dry_run: true
+  # Enable posting proposal comments on PRs (default: true)
+  # post_pr_comments: true
+  # Minimum confidence for proposing issues (default: 0.5)
+  # min_confidence: 0.5
+
+# File paths (relative to repo root)
+paths:
+  # Where to store proposal artifacts (default: runs/hermes/pm-proposals)
+  # proposals: "runs/hermes/pm-proposals"
+  # Audit log location (default: runs/hermes/pm-log.jsonl)
+  # audit_log: "runs/hermes/pm-log.jsonl"
+
+# Label taxonomy - extend or override skill defaults
+labels:
+  taxonomy:
+    # Add custom labels specific to your project
+    - name: "area:frontend"
+      color: "1D76DB"
+      description: "Frontend/UI related"
+    - name: "area:backend"
+      color: "5319E7"
+      description: "Backend/API related"
+    - name: "area:infra"
+      color: "006B75"
+      description: "Infrastructure/DevOps related"
+    - name: "team:platform"
+      color: "B088D9"
+      description: "Platform team ownership"
+    - name: "team:product"
+      color: "D4C5F9"
+      description: "Product team ownership"
+    # Override a default label's color/description
+    # - name: "bug"
+    #   color: "FF0000"
+    #   description: "Custom bug description"
+
+# GitHub Project v2 configuration
+project:
+  # Project owner (defaults to repo owner)
+  # owner: "your-org"
+  # Project title (default: "Faber Project Board")
+  # title: "My Project Board"
+  # Project description (default: auto-generated)
+  # body: "Custom project description"
+  # Add custom fields
+  fields:
+    - name: "Team"
+      type: "SINGLE_SELECT"
+      options:
+        - "Platform"
+        - "Product"
+        - "Design"
+        - "Security"
+    - name: "Sprint"
+      type: "TEXT"
+      options: []
+  # Add custom views
+  views:
+    - name: "By Team"
+      type: "TABLE"
+      group_by: "Team"
+    - name: "Sprint Board"
+      type: "BOARD"
+      group_by: "Status"
+      filters:
+        - field: "Sprint"
+          operator: "IS_NOT_EMPTY"
+
+# Release management
+release:
+  # Branch for releases (default: "main")
+  # target_branch: "main"
+  # Generate release notes (default: true)
+  # generate_notes: true
+  # Custom release note categories
+  categories:
+    - label: "area:frontend"
+      title: "🎨 Frontend"
+    - label: "area:backend"
+      title: "⚙️ Backend"
+    - label: "area:infra"
+      title: "☁️ Infrastructure"
+    - label: "enhancement"
+      title: "✨ Features"
+    - label: "bug"
+      title: "🐛 Bug Fixes"
+
+# PR review comment classification
+classification:
+  # Minimum confidence (default: 0.5)
+  # min_confidence: 0.5
+  # Include low-confidence as needs-triage (default: true)
+  # include_low_confidence: true
+  # Project-specific severity keywords
+  severity_keywords:
+    critical:
+      - "data loss"
+      - "payment failure"
+      - "auth bypass"
+    high:
+      - "checkout broken"
+      - "login fails"
+    low:
+      - "copy edit"
+      - "ui polish"
+  # Project-specific type keywords
+  type_keywords:
+    security:
+      - "payment"
+      - "pii"
+      - "gdpr"
+    bug:
+      - "crash"
+      - "500 error"
+      - "timeout"
+    enhancement:
+      - "feature flag"
+      - "experiment"
+
+# Audit and logging
+audit:
+  # Enable audit logging (default: true)
+  # enabled: true
+  # Custom log file path (default: runs/hermes/pm-log.jsonl)
+  # log_file: "runs/hermes/pm-log.jsonl"
+
+---
+# Configuration Resolution:
+# 1. Skill defaults loaded from skills/pm-github/config/defaults.yaml
+# 2. Repo config loaded from .github/pm-config.yaml (if exists)
+# 3. Repo config deep-merged over skill defaults
+# 4. CLI flags can further override at runtime
+#
+# Example CLI overrides:
+#   pm-github plan --pr 123 --config .github/pm-config.yaml
+#   pm-github sync-labels --apply --config .github/pm-config.yaml

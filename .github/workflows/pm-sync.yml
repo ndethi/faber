@@ -1,0 +1,213 @@
+# GitHub Action: pm-github PR Comment Sync
+#
+# This workflow triggers on pull request review comments and runs the
+# pm-github skill in propose-only mode to classify comments and generate
+# issue proposals. It NEVER applies changes - only proposes.
+#
+# Required setup:
+# 1. Add .github/pm-config.yaml to your repository (copy from .github/pm-config.yaml.example)
+# 2. Ensure gh CLI is available (pre-installed on GitHub runners)
+# 3. GITHUB_TOKEN has permissions: issues:write, pull-requests:write, contents:read
+#
+# The workflow:
+# - Runs on pull_request_review_comment events (created, edited)
+# - Classifies actionable comments by severity/type
+# - Generates proposal batch as PR comment
+# - Does NOT create any issues, labels, or projects (dry-run only)
+#
+# To apply proposals, a human must run:
+#   pm-github apply --batch-id <batch-id> --no-dry-run
+# Or a separate workflow with workflow_dispatch gate (pm-apply.yml - future)
+
+name: "PM-GitHub: PR Comment Sync (Propose Only)"
+
+on:
+  pull_request_review_comment:
+    types: [created, edited]
+
+# Only run on non-fork PRs for security
+jobs:
+  pm-sync:
+    name: "Classify PR Comments → Propose Issues"
+    # Only run on PRs from this repository (not forks)
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      # ─── Setup ───
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git operations
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # ─── Install Dependencies ───
+      - name: Install pm-github skill dependencies
+        run: |
+          # Install PyYAML for config parsing
+          pip install pyyaml jsonschema
+          # gh CLI is pre-installed on GitHub runners
+          gh --version
+
+      # ─── Configuration ───
+      - name: Verify pm-config.yaml exists
+        run: |
+          if [[ ! -f ".github/pm-config.yaml" ]]; then
+            echo "::warning::.github/pm-config.yaml not found - using skill defaults"
+            echo "::notice::Copy .github/pm-config.yaml.example to .github/pm-config.yaml and customize"
+          else
+            echo "✅ Found .github/pm-config.yaml"
+          fi
+
+      # ─── Extract PR Info ───
+      - name: Extract PR and comment details
+        id: pr_info
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          COMMENT_ID="${{ github.event.comment.id }}"
+          COMMENT_BODY="${{ github.event.comment.body }}"
+          REPO="${{ github.repository }}"
+
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "comment_id=$COMMENT_ID" >> $GITHUB_OUTPUT
+          echo "repo=$REPO" >> $GITHUB_OUTPUT
+
+      # ─── Run pm-github Propose ───
+      - name: Run pm-github propose-from-pr-comments
+        id: propose
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Run pm-github to classify all review comments on this PR
+          # This operates in dry-run mode only - no writes
+          cd /home/runner/work/${{ github.repository }}/src 2>/dev/null || true
+
+          # Find the skill location
+          SKILL_PATH=".github/../.github/../skills/pm-github"
+          if [[ ! -d "$SKILL_PATH" ]]; then
+            # Try alternative locations
+            for p in \
+              "skills/pm-github" \
+              "../skills/pm-github" \
+              "../../skills/pm-github" \
+              ".github/../skills/pm-github"; do
+              if [[ -d "$p" ]]; then
+                SKILL_PATH="$p"
+                break
+              fi
+            done
+          fi
+
+          echo "Using skill path: $SKILL_PATH"
+
+          # Run the propose command
+          python "$SKILL_PATH/scripts/cli.py" propose-from-pr-comments \
+            --pr "${{ steps.pr_info.outputs.pr_number }}" \
+            --config .github/pm-config.yaml \
+            --dry-run \
+            --min-confidence 0.5
+
+      # ─── Post Proposal Comment ───
+      - name: Post proposal comment on PR
+        if: steps.propose.outcome == 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Check if proposal files were generated
+          PROPOSAL_DIR="runs/hermes/pm-proposals"
+          if [[ ! -d "$PROPOSAL_DIR" ]]; then
+            echo "No proposal directory found"
+            exit 0
+          fi
+
+          # Find the latest batch for this PR
+          BATCH_ID=$(find "$PROPOSAL_DIR" -name "pm-*.md" -newer /tmp 2>/dev/null | head -1 | xargs basename -s .md)
+          if [[ -z "$BATCH_ID" ]]; then
+            # Try to find any batch file
+            BATCH_ID=$(ls -t "$PROPOSAL_DIR"/*/pm-*.md 2>/dev/null | head -1 | xargs basename -s .md)
+          fi
+
+          if [[ -z "$BATCH_ID" ]]; then
+            echo "No proposal batch found"
+            exit 0
+          fi
+
+          BATCH_FILE="$PROPOSAL_DIR/$BATCH_ID/$BATCH_ID.md"
+          if [[ ! -f "$BATCH_FILE" ]]; then
+            echo "Batch markdown not found: $BATCH_FILE"
+            exit 0
+          fi
+
+          echo "Posting proposal batch: $BATCH_ID"
+          COMMENT_BODY=$(cat "$BATCH_FILE")
+
+          # Post or update comment on PR
+          # Use a marker to identify our bot comments
+          MARKER="<!-- pm-github-proposal:${BATCH_ID} -->"
+          COMMENT_BODY="${MARKER}\n${COMMENT_BODY}"
+
+          # Check for existing comment from this bot on this batch
+          EXISTING_COMMENT=$(gh api \
+            "repos/${{ github.repository }}/issues/${{ steps.pr_info.outputs.pr_number }}/comments" \
+            --jq ".[] | select(.body | contains(\"pm-github-proposal:${BATCH_ID}\")) | .id" 2>/dev/null || echo "")
+
+          if [[ -n "$EXISTING_COMMENT" ]]; then
+            echo "Updating existing comment: $EXISTING_COMMENT"
+            gh api \
+              --method PATCH \
+              "repos/${{ github.repository }}/issues/comments/$EXISTING_COMMENT" \
+              -f body="$COMMENT_BODY"
+          else
+            echo "Creating new proposal comment"
+            gh api \
+              --method POST \
+              "repos/${{ github.repository }}/issues/${{ steps.pr_info.outputs.pr_number }}/comments" \
+              -f body="$COMMENT_BODY"
+          fi
+
+          echo "✅ Proposal comment posted/updated"
+
+      # ─── Cleanup ───
+      - name: Upload proposal artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pm-github-proposals-${{ steps.pr_info.outputs.pr_number }}
+          path: runs/hermes/pm-proposals/
+          retention-days: 7
+
+      - name: Upload audit log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pm-github-audit-log
+          path: runs/hermes/pm-log.jsonl
+          retention-days: 30
+
+# ─── Branch Protection Integration (Optional) ───
+# Uncomment to add a status check that verifies proposals exist
+# (requires branch protection rule on target branch)
+#
+#  check-proposals:
+#    name: "PM-GitHub: Verify Proposals"
+#    if: github.event.pull_request.head.repo.full_name == github.repository
+#    runs-on: ubuntu-latest
+#    needs: pm-sync
+#    steps:
+#      - name: Check proposal status
+#        run: |
+#          echo "Proposals generated by pm-github workflow"
+#          echo "Review the PR comment for proposed issues"
+#          echo "Apply with: pm-github apply --batch-id <id> --no-dry-run"
