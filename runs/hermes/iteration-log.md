@@ -182,3 +182,41 @@
 - **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit
 
 ---
+
+## Iteration 8 — 2026-07-04T16:00:00Z
+**Action:** PM-GitHub Skill (BG-005 extended) — GitHub project management automation
+- **Source:** User request — global PM sub-agent/skill for versioning, tags, releases, GitHub Projects, Issues across Faber and offshoot repos (Rohaki, k-dimensional, future)
+- **Skill name:** `pm-github` (cross-cutting, framework-scoped)
+- **Spec reference:** FRAMEWORK.md §1 (skill contract), §2 (cross-cutting skills), §12 (PM as a skill), AGENTS.md §2.11 (PM ops route through skills/pm-github/)
+- **Plan:**
+  1. **Draft SKILL.md** at `skills/pm-github/SKILL.md` with:
+     - Description: "GitHub project management operations: versioning/releases, issue/PR triage, GitHub Projects v2, labels/milestones, proposal-based workflow with human approval gates"
+     - Inputs: REPO, COMMAND (propose-issues, apply-proposals, bootstrap-project, version-bump, create-release), CONFIG_FILE
+     - Outputs: proposal artifacts (JSON + Markdown), applied changes report
+  2. **Implement modular scripts/**:
+     - `cli.py` — Typer CLI with subcommands (propose-issues, apply-proposals, bootstrap-project, version-bump, create-release, classify, dedup)
+     - `github_client.py` — gh API wrapper (issues, PRs, projects, labels, milestones, releases)
+     - `classify.py` — deterministic severity/type rubric (no LLM): Critical/High/Medium/Low + bug/enhancement/docs/refactor/security/needs-triage
+     - `dedup.py` — SHA256 dedup keys from source PR + comment ID for idempotency
+     - `proposals.py` — ProposalBatch + ProposedIssue dataclasses, write/load/generate_markdown, index.jsonl
+     - `bootstrap_project.py` — create GitHub Project v2 with fields (Status, Priority, Severity, Type, Target Release, Epic), views, automation rules
+  3. **Config**: `config/defaults.yaml` + repo override `.github/pm-config.yaml`
+  4. **GitHub Action**: `.github/workflows/pm-sync.yml` — propose-only on PR review comments (never auto-apply)
+  5. **Framework wiring**:
+     - AGENTS.md §2.11: PM ops route through skills/pm-github/
+     - FRAMEWORK.md §2: added pm-github to Cross-cutting skills
+     - FRAMEWORK.md §12: "Project management as a skill"
+     - docs/pm-github.md: human HOW-TO
+     - framework/lessons.md: scaffold extension pattern lesson
+  6. **Add evals/**: 31 tests covering classify, dedup, dry-run enforcement, proposal shape, CLI integration
+- **Dependencies:** skill-author (for dogfooding generation), gh CLI auth, jsonschema
+- **Constraints:**
+  - Per AGENTS.md §2.7: no autonomous skill creation → manual PR (generated via skill-author, reviewed by human)
+  - Per FRAMEWORK.md §1: must have evals (31/31 passing)
+  - HITL gate: `--apply` flag required for writes, default is dry-run proposal only
+  - Proposal-only workflow: GitHub Action posts proposal artifacts as PR comments, human reviews + approves before apply
+- **Result:** ✓ skills/pm-github/ created with 6 scripts, config, evals (31 tests), docs, framework wiring; ✓ all evals pass; ✓ PR #20 merged
+- **Diff:** ~4,800 lines added across skill, workflows, docs, framework files
+- **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit, BG-004 remaining lifecycle skills (scaffold, evaluate, deploy, publish, observe, feedback)
+
+---
