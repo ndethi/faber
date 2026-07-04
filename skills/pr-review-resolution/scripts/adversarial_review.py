@@ -101,10 +101,11 @@ def call_openrouter(model: str, prompt: str, api_key: str, max_retries: int = 3)
     raise RuntimeError(f"Rate limited after {max_retries} retries")
 
 
-def call_nvidia_nemotron(prompt: str, api_key: str) -> str:
+def call_nvidia_nemotron(prompt: str, api_key: str, max_retries: int = 2) -> str:
     """Call NVIDIA Nemotron API as fallback."""
     import requests
     import re
+    import time
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -117,19 +118,27 @@ def call_nvidia_nemotron(prompt: str, api_key: str) -> str:
         "max_tokens": 4000,
     }
 
-    response = requests.post(
-        "https://integrate.api.nvidia.com/v1/chat/completions",
-        headers=headers,
-        json=data,
-        timeout=120,
-    )
-    response.raise_for_status()
-    result = response.json()
-    content = result["choices"][0]["message"]["content"]
+    for attempt in range(max_retries):
+        response = requests.post(
+            "https://integrate.api.nvidia.com/v1/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=120,
+        )
+        if response.status_code == 503:
+            wait_time = 5 * (attempt + 1)
+            print(f"NVIDIA 503, waiting {wait_time}s... (attempt {attempt + 1}/{max_retries})", file=sys.stderr)
+            time.sleep(wait_time)
+            continue
+        response.raise_for_status()
+        result = response.json()
+        content = result["choices"][0]["message"]["content"]
 
-    # Nemotron includes reasoning in  tags - strip it
-    content = re.sub(r"", "", content, flags=re.DOTALL)
-    return content.strip()
+        # Nemotron includes reasoning in  tags - strip it
+        content = re.sub(r"", "", content, flags=re.DOTALL)
+        return content.strip()
+
+    raise RuntimeError(f"NVIDIA unavailable after {max_retries} retries")
 
 
 def parse_llm_response(response: str) -> List[ReviewIssue]:
@@ -250,25 +259,30 @@ def main():
     # Step 3: Call LLM for adversarial review (try OpenRouter first, fallback to NVIDIA)
     print("🤖 Calling adversarial LLM...", file=sys.stderr)
     prompt = build_adversarial_prompt(diff, changed_files)
+    llm_response = None
+    model_used = None
     try:
         llm_response = call_openrouter(args.model, prompt, openrouter_key)
         model_used = f"openrouter:{args.model}"
     except Exception as e:
         print(f"OpenRouter failed: {e}, trying NVIDIA fallback...", file=sys.stderr)
         if not nvidia_key:
-            print(json.dumps({"error": f"OpenRouter failed and no NVIDIA_API_KEY: {e}"}))
-            sys.exit(1)
-        try:
-            llm_response = call_nvidia_nemotron(prompt, nvidia_key)
-            model_used = "nvidia/nemotron-3-ultra-550b-a55b"
-        except Exception as e2:
-            print(json.dumps({"error": f"Both OpenRouter and NVIDIA failed: {e2}"}))
-            sys.exit(1)
+            print("No NVIDIA_API_KEY available, skipping adversarial review", file=sys.stderr)
+        else:
+            try:
+                llm_response = call_nvidia_nemotron(prompt, nvidia_key)
+                model_used = "nvidia/nemotron-3-ultra-550b-a55b"
+            except Exception as e2:
+                print(f"NVIDIA fallback failed: {e2}, skipping adversarial review", file=sys.stderr)
 
-    # Step 4: Parse response
-    print("📝 Parsing LLM response...", file=sys.stderr)
-    issues = parse_llm_response(llm_response)
-    print(f"Found {len(issues)} issues", file=sys.stderr)
+    if llm_response is None:
+        print("⚠️  Both LLMs unavailable, skipping adversarial review", file=sys.stderr)
+        issues = []
+    else:
+        # Step 4: Parse response
+        print("📝 Parsing LLM response...", file=sys.stderr)
+        issues = parse_llm_response(llm_response)
+        print(f"Found {len(issues)} issues", file=sys.stderr)
 
     # Step 5: Post comments if requested
     posted = 0
@@ -281,7 +295,7 @@ def main():
         "mode": "adversarial_review",
         "pr_number": args.pr_number,
         "repo": args.repo,
-        "model": model_used,
+        "model": model_used or "unavailable",
         "changed_files": changed_files,
         "issues_found": len(issues),
         "comments_posted": posted,
