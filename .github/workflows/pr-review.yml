@@ -1,0 +1,44 @@
+name: PR Review Resolution (Auto-Fix)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+
+jobs:
+  resolve:
+    name: Resolve Review Comments
+    runs-on: ubuntu-latest
+    # Only run if PR has 'auto-resolve' label OR comment contains '/resolve-reviews'
+    if: |
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'auto-resolve')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/resolve-reviews'))
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --no-cache-dir --quiet requests pyyaml pytest
+
+      - name: Run PR Review Resolution (auto-fix style/docs/test comments)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          python skills/pr-review-resolution/scripts/pr_review_resolution.py resolve \
+            ${{ github.event.pull_request.number || github.event.issue.number }} \
+            ${{ github.repository }} \
+            --hitl \
+            --no-notify

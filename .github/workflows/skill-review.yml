@@ -1,0 +1,108 @@
+name: Skill Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [dev]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    name: Adversarial Skill Review
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-copilot[bot]' && github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --no-cache-dir --quiet requests pyyaml pytest
+
+      - name: Run Adversarial Review
+        id: review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          # Adversarial model - different from writing model (nemotron), free tier on OpenRouter
+          REVIEW_MODEL: "qwen/qwen3-coder:free"
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_REVIEW_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+        run: |
+          python skills/pr-review-resolution/scripts/adversarial_review.py \
+            --pr-number ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --model ${{ env.REVIEW_MODEL }} \
+            --post-comments
+
+      - name: Review Gate Summary
+        if: always()
+        run: |
+          echo "## Review Gate" >> $GITHUB_STEP_SUMMARY
+          echo "**Adversarial review completed.** Human review required before merge." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review posted comments on PR" >> $GITHUB_STEP_SUMMARY
+          echo "2. Address any BLOCKER or CRITICAL issues" >> $GITHUB_STEP_SUMMARY
+          echo "3. Human approval required (no auto-merge per AGENTS.md §11)" >> $GITHUB_STEP_SUMMARY
+
+  evals:
+    name: Skill Evals
+    runs-on: ubuntu-latest
+    needs: review
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --no-cache-dir --quiet requests pyyaml pytest
+
+      - name: Run all skill evals
+        run: |
+          for skill in skills/*/; do
+            if [ -d "$skill/evals" ]; then
+              echo "Running evals for $(basename $skill)..."
+              python -m pytest "$skill/evals/" -v || exit 1
+            fi
+          done
+
+  trajectory-guard:
+    name: Trajectory Guard
+    runs-on: ubuntu-latest
+    needs: evals
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run trajectory-guard
+        run: |
+          # Find latest telemetry
+          LATEST_RUN=$(ls -t runs/*/telemetry.json | head -1)
+          if [ -f "$LATEST_RUN" ]; then
+            python skills/trajectory-guard/scripts/trajectory_guard.py \
+              --telemetry-path "$LATEST_RUN" \
+              --strictness exact
+          else
+            echo "No telemetry found, skipping trajectory-guard"
+          fi
