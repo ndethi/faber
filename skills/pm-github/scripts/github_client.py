@@ -287,7 +287,7 @@ class GitHubClient:
                        dry_run: Optional[bool] = None) -> GHResult:
         """Create a new GitHub Project v2."""
         effective_dry_run = dry_run if dry_run is not None else self.dry_run
-        args = ["project", "create", "--title", title, "--owner", owner, "--body", body, "--format", "json"]
+        args = ["project", "create", "--title", title, "--owner", owner, "--format", "json"]
         self._log("create_project", {"title": title, "owner": owner}, effective_dry_run)
 
         if effective_dry_run:

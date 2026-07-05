@@ -1,0 +1,88 @@
+name: PM Release Automation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        type: choice
+        options: [patch, minor, major]
+        required: false
+      tag:
+        description: 'Explicit tag (e.g., v1.0.0)'
+        type: string
+        required: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Configure gh CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Generate release proposal
+        id: propose
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BUMP_ARGS=""
+          if [ "${{ github.event.inputs.bump }}" != "" ]; then
+            BUMP_ARGS="--bump ${{ github.event.inputs.bump }}"
+          fi
+          TAG_ARGS=""
+          if [ "${{ github.event.inputs.tag }}" != "" ]; then
+            TAG_ARGS="--tag ${{ github.event.inputs.tag }}"
+          fi
+          
+          python skills/pm-github/scripts/cli.py \
+            --config .github/pm-config.yaml \
+            propose-release \
+            $BUMP_ARGS \
+            $TAG_ARGS \
+            --apply \
+            --update-roadmap \
+            --dry-run false
+
+      - name: Commit roadmap updates
+        if: success()
+        run: |
+          git add docs/roadmap.md
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update roadmap for release"
+            git push
+          else
+            echo "No roadmap changes to commit"
+          fi
+
+      - name: Notify
+        if: always()
+        run: |
+          echo "Release workflow completed"
