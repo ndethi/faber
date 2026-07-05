@@ -241,7 +241,8 @@ audit:
   enabled: true
   # Log file path (relative to repo root)
   log_file: "runs/hermes/pm-log.jsonl"
-  # Include full_context: |
-  This configuration file is the skill-level defaults for pm-github.
-  Repository-specific overrides should be placed in .github/pm-config.yaml
-  which will be merged over these defaults.
+  # Include full context
+  config_note: |
+    This configuration file is the skill-level defaults for pm-github.
+    Repository-specific overrides should be placed in .github/pm-config.yaml
+    which will be merged over these defaults.
