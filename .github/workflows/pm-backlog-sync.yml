@@ -1,0 +1,57 @@
+name: PM Backlog → Project Sync
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'docs/roadmap.md'
+      - 'runs/hermes/backlog.md'
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  projects: write
+
+jobs:
+  sync-backlog-to-project:
+    name: Sync Roadmap to GitHub Project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pm-github skill dependencies
+        run: |
+          pip install pyyaml
+
+      - name: Configure GitHub CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Sync backlog to project
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python skills/pm-github/scripts/cli.py \
+            --config .github/pm-config.yaml \
+            sync-backlog-to-project \
+            --roadmap docs/roadmap.md \
+            --apply
+
+      - name: Upload audit log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pm-audit-log
+          path: runs/hermes/pm-log.jsonl
+          retention-days: 30
