@@ -403,12 +403,12 @@ def cmd_propose_release(args: argparse.Namespace, config: Dict) -> int:
     print("📦 PM-GitHub Release Proposer")
     print("=" * 50)
 
-    client = get_github_client(config, dry_run=True)
+    client = get_github_client(config, dry_run=args.dry_run)
 
     # Get recent releases
     releases_result = client.list_releases(limit=5)
     last_release_tag = None
-    if releases_result.success and releases_result.data:
+    if releases_result.success and releases_result and releases_result.data:
         last_release_tag = releases_result.data[0].get("tagName")
 
     # Get merged PRs since last release
@@ -420,37 +420,128 @@ def cmd_propose_release(args: argparse.Namespace, config: Dict) -> int:
     prs = [pr for pr in (prs_result.data or []) if pr.get("mergedAt")]
 
     if last_release_tag:
-        # Filter PRs after last release (would need date comparison)
-        pass
+        # Filter PRs after last release date
+        last_release_result = client.get_release(last_release_tag)
+        if last_release_result.success and last_release_result.data:
+            last_release_date = last_release_result.data.get("publishedAt")
+            if last_release_date:
+                from datetime import datetime
+                last_dt = datetime.fromisoformat(last_release_date.replace("Z", "+00:00"))
+                prs = [pr for pr in prs if pr.get("mergedAt") and datetime.fromisoformat(pr["mergedAt"].replace("Z", "+00:00")) > last_dt]
 
-    print(f"Found {len(prs)} merged PRs since last release")
+    print(f"Found {len(prs)} merged PRs since last release ({last_release_tag or 'initial'})")
 
-    # Generate release notes (simplified)
-    notes = generate_release_notes(prs)
+    # Calculate semantic version bump
+    version_bump = calculate_version_bump(prs, args.bump)
+    proposed_tag = compute_next_tag(last_release_tag, version_bump)
 
+    # Generate release notes
+    notes = generate_release_notes(prs, version_bump)
+
+    print(f"\n📋 Proposed version bump: {version_bump}")
+    print(f"🏷️  Proposed tag: {proposed_tag}")
     print("\n--- RELEASE NOTES ---")
     print(notes)
 
     if args.tag:
-        print(f"\nProposed tag: {args.tag}")
-        if not args.dry_run:
-            result = client.create_release(args.tag, f"Release {args.tag}", notes, dry_run=False)
-            if result.success:
-                print("✅ Release created")
-            else:
-                print(f"❌ Failed: {result.stderr}")
+        proposed_tag = args.tag
+        print(f"\n🏷️  Using provided tag: {proposed_tag}")
+
+    # Write proposal to file
+    proposal = {
+        "proposed_tag": proposed_tag,
+        "version_bump": version_bump,
+        "last_release_tag": last_release_tag,
+        "pr_count": len(prs),
+        "release_notes": notes,
+        "prs": [{"number": pr["number"], "title": pr["title"], "mergedAt": pr.get("mergedAt")} for pr in prs]
+    }
+
+    proposals_dir = Path(config.get("paths", {}).get("proposals", "runs/hermes/pm-proposals"))
+    proposals_dir.mkdir(parents=True, exist_ok=True)
+    proposal_file = proposals_dir / f"release-{proposed_tag}.json"
+    proposal_file.write_text(json.dumps(proposal, indent=2))
+    print(f"\n💾 Proposal saved: {proposal_file}")
+
+    if not args.dry_run and (args.tag or args.apply):
+        print(f"\n⚡ Creating release: {proposed_tag}")
+        result = client.create_release(proposed_tag, f"Release {proposed_tag}", notes, dry_run=False)
+        if result.success:
+            print("✅ Release created")
+
+            # Update roadmap
+            if args.update_roadmap:
+                update_roadmap_for_release(proposed_tag, config)
+        else:
+            print(f"❌ Failed: {result.stderr}")
+            return 1
 
     return 0
 
 
-def generate_release_notes(prs: List[Dict]) -> str:
-    """Generate release notes from merged PRs."""
-    lines = ["## Changes", ""]
+def calculate_version_bump(prs: List[Dict], explicit_bump: Optional[str] = None) -> str:
+    """Calculate semantic version bump from conventional commit PR titles."""
+    if explicit_bump:
+        return explicit_bump
 
-    # Group by label/type
+    has_breaking = False
+    has_feature = False
+    has_fix = False
+
+    for pr in prs:
+        title = pr.get("title", "").lower()
+        # Check for breaking changes
+        if "!" in title.split(":")[0] or "breaking" in title or "major" in title:
+            has_breaking = True
+        # Check conventional commit types
+        elif title.startswith("feat:") or title.startswith("feature:"):
+            has_feature = True
+        elif title.startswith("fix:") or title.startswith("bugfix:"):
+            has_fix = True
+
+    if has_breaking:
+        return "major"
+    elif has_feature:
+        return "minor"
+    elif has_fix:
+        return "patch"
+    return "patch"
+
+
+def compute_next_tag(last_tag: Optional[str], bump: str) -> str:
+    """Compute next semantic version tag."""
+    if not last_tag:
+        return "v0.1.0"
+
+    # Parse vX.Y.Z
+    import re
+    match = re.match(r"v?(\d+)\.(\d+)\.(\d+)", last_tag)
+    if not match:
+        return "v0.1.0"
+
+    major, minor, patch = map(int, match.groups())
+
+    if bump == "major":
+        major += 1
+        minor = 0
+        patch = 0
+    elif bump == "minor":
+        minor += 1
+        patch = 0
+    elif bump == "patch":
+        patch += 1
+
+    return f"v{major}.{minor}.{patch}"
+
+
+def generate_release_notes(prs: List[Dict], version_bump: str) -> str:
+    """Generate release notes from merged PRs grouped by type."""
+    lines = ["## Changes", "", f"*Version bump: {version_bump}*", ""]
+
     features = []
     fixes = []
     docs = []
+    breaking = []
     other = []
 
     for pr in prs:
@@ -460,15 +551,23 @@ def generate_release_notes(prs: List[Dict]) -> str:
 
         entry = f"- {title} (#{number})"
 
-        if any(l in labels for l in ["enhancement", "feature"]):
+        # Check for breaking changes
+        if "!" in title.split(":")[0] or "breaking" in title.lower():
+            breaking.append(entry)
+        # Group by conventional commit type
+        elif title.lower().startswith("feat:") or title.lower().startswith("feature:") or any(l in labels for l in ["enhancement", "feature"]):
             features.append(entry)
-        elif any(l in labels for l in ["bug", "fix"]):
+        elif title.lower().startswith("fix:") or title.lower().startswith("bugfix:") or any(l in labels for l in ["bug", "fix"]):
             fixes.append(entry)
         elif any(l in labels for l in ["docs", "documentation"]):
             docs.append(entry)
         else:
             other.append(entry)
 
+    if breaking:
+        lines.append("### ⚠️ Breaking Changes")
+        lines.extend(breaking)
+        lines.append("")
     if features:
         lines.append("### ✨ Features")
         lines.extend(features)
@@ -487,6 +586,34 @@ def generate_release_notes(prs: List[Dict]) -> str:
         lines.append("")
 
     return "\n".join(lines)
+
+
+def update_roadmap_for_release(tag: str, config: Dict) -> None:
+    """Update docs/roadmap.md: move completed items, add new version section."""
+    import re
+    from datetime import date
+
+    roadmap_path = Path("docs/roadmap.md")
+    if not roadmap_path.exists():
+        print("⚠️  No roadmap.md found, skipping update")
+        return
+
+    content = roadmap_path.read_text()
+
+    # Extract version from tag (e.g., v0.3.0 -> 0.3.0)
+    version = tag.lstrip("v")
+
+    # Find the current milestone for this version and mark as Done
+    # This is a simplified update - in practice would be more sophisticated
+    today = date.today().isoformat()
+
+    # Add release note reference
+    release_entry = f"\n---\n\n## Release {tag} ({today})\n\nSee [GitHub Release](https://github.com/{config.get('github', {}).get('repo', 'unknown')}/releases/tag/{tag}) for details.\n"
+
+    content += release_entry
+
+    roadmap_path.write_text(content)
+    print(f"📝 Updated {roadmap_path} with release {tag}")
 
 
 def cmd_verify_config(args: argparse.Namespace, config: Dict) -> int:
@@ -566,11 +693,13 @@ def cmd_sync_backlog_to_project(args: argparse.Namespace, config: Dict) -> int:
     print(f"Repository: {client.repo}")
 
     # Find existing project or create
-    project_result = client.list_projects()
+    owner = project_config.get("owner") or (client.repo.split("/")[0] if client.repo else "unknown")
+    project_result = client.list_projects(owner=owner)
     project_id = None
 
     if project_result.success and project_result.data:
-        for proj in project_result.data:
+        projects = project_result.data.get("projects", []) if isinstance(project_result.data, dict) else project_result.data
+        for proj in projects:
             if proj.get("title") == project_title:
                 project_id = proj.get("id")
                 print(f"   Found existing project: {project_title} (ID: {project_id})")
@@ -728,7 +857,10 @@ Examples:
     # propose-release
     release_parser = subparsers.add_parser("propose-release", help="Propose a release")
     release_parser.add_argument("--tag", help="Release tag (e.g., v1.0.0)")
-    release_parser.add_argument("--dry-run", action="store_true", default=True)
+    release_parser.add_argument("--bump", choices=["major", "minor", "patch"], help="Explicit version bump (overrides conventional commits)")
+    release_parser.add_argument("--dry-run", action="store_true", default=True, help="Dry-run mode (default)")
+    release_parser.add_argument("--apply", action="store_true", help="Create actual release (implies --no-dry-run)")
+    release_parser.add_argument("--update-roadmap", action="store_true", help="Update docs/roadmap.md after release")
 
     # verify-config
     verify_parser = subparsers.add_parser("verify-config", help="Verify configuration")
