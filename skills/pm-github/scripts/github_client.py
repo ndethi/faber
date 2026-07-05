@@ -281,7 +281,11 @@ class GitHubClient:
         args = ["project", "list", "--format", "json", "--limit", "50"]
         if owner:
             args.extend(["--owner", owner])
-        return self._run_gh(args, capture_json=True)
+        result = self._run_gh(args, capture_json=True)
+        # gh project list returns {"projects": [...]} - normalize to array
+        if result.success and result.data and isinstance(result.data, dict):
+            result.data = result.data.get("projects", [])
+        return result
 
     def create_project(self, title: str, owner: str, body: str = "",
                        dry_run: Optional[bool] = None) -> GHResult:
@@ -443,6 +447,11 @@ class GitHubClient:
     def list_releases(self, limit: int = 20) -> GHResult:
         """List releases."""
         args = ["release", "list", "--limit", str(limit), "--json", "tagName,name,isDraft,isPrerelease,createdAt"]
+        return self._run_gh(args, capture_json=True)
+
+    def get_release(self, tag: str) -> GHResult:
+        """Get a specific release by tag."""
+        args = ["release", "view", tag, "--json", "tagName,name,body,publishedAt,isDraft,isPrerelease,createdAt"]
         return self._run_gh(args, capture_json=True)
 
     # ============ PR Operations ============

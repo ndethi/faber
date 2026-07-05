@@ -1,0 +1,60 @@
+name: PM Project Bootstrap
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_title:
+        description: 'Project title'
+        type: string
+        required: true
+        default: 'Faber Project Board'
+      project_owner:
+        description: 'Project owner (user or org)'
+        type: string
+        required: true
+        default: 'ndethi'
+
+permissions:
+  contents: read
+  projects: write
+
+jobs:
+  bootstrap-project:
+    name: Bootstrap GitHub Project v2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+
+      - name: Configure gh CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Bootstrap project
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python skills/pm-github/scripts/cli.py \
+            --config .github/pm-config.yaml \
+            bootstrap-project \
+            --apply 2>&1
+
+      - name: Sync labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python skills/pm-github/scripts/cli.py \
+            --config .github/pm-config.yaml \
+            sync-labels \
+            --apply 2>&1
