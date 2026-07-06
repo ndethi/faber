@@ -12,7 +12,7 @@ Run this before starting any significant work to ensure:
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Tuple
+from typing import Callable, List, Tuple
 
 
 class PreWorkChecklist:
@@ -32,9 +32,14 @@ class PreWorkChecklist:
         except Exception as e:
             return False, str(e)
 
-    def check(self, name: fn, auto_fix: bool = False) -> bool:
+    def check(self, name: str, check_fn: Callable[[], bool], auto_fix: bool = False) -> bool:
         """Run a check and record result."""
-        pass
+        try:
+            result = check_fn()
+            return result
+        except Exception as e:
+            self.results.append((name, False, f"Error: {e}"))
+            return False
 
     def check_git_clean(self) -> bool:
         """Working tree is clean (no uncommitted changes)."""
