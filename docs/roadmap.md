@@ -22,9 +22,10 @@
 | ID | Title | Type | Priority | Severity | Status | Epic |
 |----|-------|------|----------|----------|--------|------|
 | BG-008 | Client portal (app.client-portal@0.1.0) | Enhancement | Medium | Medium | Backlog | Client Portal |
-| BG-013 | PM Automation: Backlog → Project sync | Enhancement | High | High | In Progress | PM Automation |
-| BG-014 | PM Automation: Release/tag automation | Enhancement | High | High | Planned | PM Automation |
-| BG-015 | PM Automation: Label/Project sync | Enhancement | Medium | Medium | Planned | PM Automation |
+| BG-013 | PM Automation: Backlog → Project sync | Enhancement | High | High | **Done** | PM Automation |
+| BG-014 | PM Automation: Release/tag automation | Enhancement | High | High | **Done** | PM Automation |
+| BG-015 | PM Automation: Label/Project sync | Enhancement | Medium | Medium | **Done** | PM Automation |
+| BG-018 | PM Automation: Early drift detection (pre-work checklist, branch enforcement, telemetry emission, daily trajectory-guard) | Enhancement | High | Medium | **In Progress** | PM Automation |
 
 ### v1.0.0 — Production Ready
 **Target:** 2026-09-30 | **Status:** Planned
@@ -54,6 +55,9 @@
 - BG-005: Cross-cutting skills (6/6 done) ✅
 - BG-011: PR Review Resolution Skill ✅
 - BG-012: PR Review Skill ✅
+- BG-013: PM Automation: Backlog → Project sync ✅
+- BG-014: PM Automation: Release/tag automation ✅
+- BG-015: PM Automation: Label/Project sync ✅
 
 ---
 
@@ -81,3 +85,4 @@
 | `pm-release.yml` | Push to `main`, `workflow_dispatch` | Semantic version, tag, release notes, update this file |
 | `pm-label-sync.yml` | Push to `dev` | Sync label taxonomy |
 | `pm-project-bootstrap.yml` | `workflow_dispatch` | Bootstrap Project v2 for new repos |
+| `daily-trajectory-guard.yml` | Daily 2 AM UTC, `workflow_dispatch` | Run trajectory-guard, create drift alert issues |

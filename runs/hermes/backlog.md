@@ -21,6 +21,10 @@
 | BG-008 | State Report | **Client portal** — per app.client-portal@0.1.0 once skills + CI stable | MEDIUM | open |
 | BG-011 | User Request | **PR Review Resolution Skill** — fetch Copilot/GH review comments via gh API, systematically resolve each comment, push fixes, update PR | MEDIUM | **done** (PR #10 merged) |
 | BG-012 | User Request | **PR Review Skill** — automated first-pass PR review against FRAMEWORK.md/AGENTS.md/HERMES-BRIEF.md, deterministic checks + LLM semantic review, posts GitHub review with inline comments | MEDIUM | **done** (PR #19 merged) |
+| BG-013 | User Request | **PM Automation: Backlog → Project sync** — sync docs/roadmap.md to GitHub Project v2 with fields (Status, Priority, Severity, Type, Target Release, Epic) | MEDIUM | **done** (PR #23 merged) |
+| BG-014 | User Request | **PM Automation: Release/tag automation** — semantic version from conventional commits, generate release notes, create tag + GitHub Release, update docs/roadmap.md | MEDIUM | **done** (PR #25 merged) |
+| BG-015 | User Request | **PM Automation: Label/Project sync** — label taxonomy sync workflow, project bootstrap workflow for new repos | MEDIUM | **done** (PR #26 merged) |
+| BG-018 | User Request | **PM Automation: Early drift detection** — pre-work checklist, branch enforcement hook, telemetry emission in skills, daily trajectory-guard cron | MEDIUM | **in progress** (daily cron done PR #26; checklist, hook, template, telemetry pending) |
 
 ## Low Priority / Tracking
 
@@ -45,4 +49,4 @@
 - One item per iteration (parallelism only via subagents for independent skills)
 - Update status to "in_progress" when starting, "done" when PR merged
 - New items added as discovered during iterations
-- **Next up**: BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit
+- **Next up**: BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-018 remaining items (checklist, hook, template, telemetry)

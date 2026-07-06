@@ -14,6 +14,7 @@ Commands:
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,6 +33,7 @@ from proposals import (
     load_proposal_batch,
     ProposalBatch
 )
+from telemetry import PmGithubTelemetry, TelemetryContext
 import importlib.util
 
 
@@ -877,8 +879,14 @@ Examples:
     config = load_config(config_path)
 
     # Override dry_run from args
+    dry_run = True
     if hasattr(args, "dry_run"):
-        config.setdefault("github", {})["dry_run"] = args.dry_run
+        dry_run = args.dry_run
+        config.setdefault("github", {})["dry_run"] = dry_run
+
+    # Initialize telemetry for trajectory-guard (BG-018)
+    repo = config.get("github", {}).get("repo")
+    telemetry = PmGithubTelemetry(repo=repo)
 
     # Dispatch
     dispatch = {
@@ -897,7 +905,9 @@ Examples:
         parser.print_help()
         return 1
 
-    return handler(args, config)
+    # Wrap handler with telemetry emission
+    with TelemetryContext(telemetry, "pm-github", args.command, dry_run=dry_run):
+        return handler(args, config)
 
 
 if __name__ == "__main__":
