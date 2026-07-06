@@ -14,7 +14,7 @@
 
 | ID | Source | Item | Priority | Status |
 |----|--------|------|----------|--------|
-| BG-004 | State Report | **Missing lifecycle skills** — intent-collect, scaffold, evaluate, deploy, publish, observe, feedback need SKILL.md + scripts/ + evals/ | MEDIUM | **intent-collect done** (PR #11); others pending |
+| BG-004 | State Report | **Missing lifecycle skills** — intent-collect, scaffold, evaluate, deploy, publish, observe, feedback need SKILL.md + scripts/ + evals/ | MEDIUM | **done** (all 8 lifecycle skills complete with evals) |
 | BG-005 | State Report | **Cross-cutting skills** — trajectory-guard, dashboard, model-route, scope-ledger, skill-author, pm-github need completion | MEDIUM | **6/6 done** (trajectory-guard #13, dashboard #14, model-route #15, scope-ledger #16, skill-author #18, pm-github #20 merged) |
 | BG-006 | State Report | **_inbox/ and build-plan/** — persisted from v0.2 bundle or amend build.00 acceptance | MEDIUM | open |
 | BG-007 | State Report | **CI workflow** — per build-plan/build.02 once enough skills exist | MEDIUM | open |
@@ -24,7 +24,7 @@
 | BG-013 | User Request | **PM Automation: Backlog → Project sync** — sync docs/roadmap.md to GitHub Project v2 with fields (Status, Priority, Severity, Type, Target Release, Epic) | MEDIUM | **done** (PR #23 merged) |
 | BG-014 | User Request | **PM Automation: Release/tag automation** — semantic version from conventional commits, generate release notes, create tag + GitHub Release, update docs/roadmap.md | MEDIUM | **done** (PR #25 merged) |
 | BG-015 | User Request | **PM Automation: Label/Project sync** — label taxonomy sync workflow, project bootstrap workflow for new repos | MEDIUM | **done** (PR #26 merged) |
-| BG-018 | User Request | **PM Automation: Early drift detection** — pre-work checklist, branch enforcement hook, telemetry emission in skills, daily trajectory-guard cron | MEDIUM | **in progress** (daily cron done PR #26; checklist, hook, template, telemetry pending) |
+| BG-018 | User Request | **PM Automation: Early drift detection** — pre-work checklist, branch enforcement hook, telemetry emission in skills, daily trajectory-guard cron | MEDIUM | **done** (all items complete) |
 
 ## Low Priority / Tracking
 
@@ -49,4 +49,4 @@
 - One item per iteration (parallelism only via subagents for independent skills)
 - Update status to "in_progress" when starting, "done" when PR merged
 - New items added as discovered during iterations
-- **Next up**: BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-018 remaining items (checklist, hook, template, telemetry)
+- **Next up**: BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit, BG-010 AGENTS/FRAMEWORK alignment
