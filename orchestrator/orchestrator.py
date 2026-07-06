@@ -58,14 +58,14 @@ class Orchestrator:
 
         # Map skill_id to script path
         skill_scripts = {
+            "intent-collect": "skills/intent-collect/scripts/intent_collect.py",
+            "scaffold": "skills/scaffold/scripts/scaffold.py",
             "build": "skills/build/scripts/build.py",
-            "intent-collect": "skills/intent-collect/scripts/intent_collect.py",  # future
-            "scaffold": "skills/scaffold/scripts/scaffold.py",  # future
-            "evaluate": "skills/evaluate/scripts/evaluate.py",  # future
-            "deploy": "skills/deploy/scripts/deploy.py",  # future
-            "publish": "skills/publish/scripts/publish.py",  # future
-            "observe": "skills/observe/scripts/observe.py",  # future
-            "feedback": "skills/feedback/scripts/feedback.py",  # future
+            "evaluate": "skills/evaluate/scripts/evaluate.py",
+            "deploy": "skills/deploy/scripts/deploy.py",
+            "publish": "skills/publish/scripts/publish.py",
+            "observe": "skills/observe/scripts/observe.py",
+            "feedback": "skills/feedback/scripts/collect_feedback.py",
             "noop": "skills/noop/scripts/noop.py",
         }
 
