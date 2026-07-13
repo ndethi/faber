@@ -1,7 +1,6 @@
 ---
 name: observe
-description: |
-  Lifecycle skill #7: collects telemetry data from each run and stores it in `runs/<run_id>/observations.json`. Reads telemetry.json from run directories, merges relevant fields (timestamp, cost, metrics) into a single JSON per run, and writes observations.json alongside telemetry.
+description: "Lifecycle skill #7: collects and aggregates telemetry data from framework runs into observations.json"
 version: 1.0.0
 author: ndethi
 license: MIT
