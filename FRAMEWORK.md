@@ -48,6 +48,80 @@ An **orchestrator** composes lifecycle skills per a run plan; cross-cutting skil
 
 It is the only sanctioned way to create or change intent. Output is a clean client-facing view plus the machine artifacts.
 
+## 3.5 Intent Collection Interfaces — deterministic front door, multiple surfaces
+
+The `intent-collect` skill MUST emit identical machine artifacts (`spec.md`, `trajectory.md`, `scope-baseline.md`) regardless of input surface. This is the determinism guarantee.
+
+### Supported Input Surfaces
+
+| Surface | Description | Determinism |
+|---------|-------------|-------------|
+| **CLI (structured prompts)** | Terminal-based elicitation via `intent_collect.py --interactive` | ✅ Same inputs → same outputs |
+| **Web Form (static HTML)** | Client-facing questionnaire at `/intent` endpoint, posts JSON to orchestrator | ✅ Form schema versioned; same JSON → same artifacts |
+| **API (JSON-RPC)** | `intent_collect` RPC method on orchestrator gateway; accepts structured JSON | ✅ Direct machine-to-machine; no LLM in path |
+| **Telegram/Discord Bot** | Conversational elicitation via gateway; structured prompts with buttons | ✅ Gateway normalizes to JSON; same JSON → same artifacts |
+| **Import (Markdown/YAML)** | `intent_collect.py --import spec.md` — upgrades legacy specs | ✅ Upgrade rules deterministic |
+
+### Interface Contract
+
+All surfaces normalize to a **canonical JSON input**:
+
+```json
+{
+  "context": "Client conversation or project brief (free text)",
+  "production_context": "prototype | normal | client-production",
+  "constraints": ["brand-guidelines", "budget", "timeline"],
+  "non_goals": ["mobile-app", "backend-api"],
+  "stakeholders": [{"role": "marketing-lead", "name": "Jane"}],
+  "artifacts": {
+    "existing_spec": "path/to/spec.md",
+    "existing_trajectory": "path/to/trajectory.md"
+  }
+}
+```
+
+`intent-collect` runs **purely deterministic logic** (no LLM) to emit:
+- `spec.md` — with `SPEC-XX:` acceptance criteria IDs
+- `trajectory.md` — with `strictness: exact|ordered|partial`
+- `scope-baseline.md` — client-shareable, seeds `scope-ledger`
+
+### Determinism Guarantee
+
+```bash
+# Same input JSON → identical three output files (byte-for-byte)
+python skills/intent-collect/scripts/intent_collect.py --input input.json --output-dir out1
+python skills/intent-collect/scripts/intent_collect.py --input input.json --output-dir out2
+diff -r out1 out2  # must be empty
+```
+
+### Web Form Spec (assets/intent-form.html)
+
+- Single-page, no framework, posts to `/api/intent/collect` (orchestrator gateway)
+- Form fields map 1:1 to canonical JSON schema
+- Versioned: `intent-form@v1.html` → `intent-form@v2.html` on schema change
+- Client can bookmark and share; no auth required for read-only preview
+
+### Telegram Bot Flow
+
+```
+/intent_new → structured prompts with inline keyboards
+  → context (free text)
+  → production_context (button: prototype/normal/client-production)
+  → constraints (multi-select)
+  → non_goals (multi-select)
+  → stakeholders (repeatable)
+  → confirm → posts to orchestrator → returns spec.md + trajectory.md + scope-baseline.md as files
+```
+
+### HITL Gate on Intent Change
+
+Any change to `spec.md`/`trajectory.md`/`scope-baseline.md` after initial emit:
+1. Creates a PR with diff (via `skill-author` or `pm-github`)
+2. Requires human approval (HITL gate)
+3. On merge, re-triggers downstream skills per `trajectory-guard` strictness
+
+---
+
 ## 4. Trajectory determinant — process-level drift control
 
 v0.1 tested *outcomes*. v0.2 adds a test of *process*.

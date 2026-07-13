@@ -25,7 +25,7 @@
 | BG-013 | PM Automation: Backlog → Project sync | Enhancement | High | High | **Done** | PM Automation |
 | BG-014 | PM Automation: Release/tag automation | Enhancement | High | High | **Done** | PM Automation |
 | BG-015 | PM Automation: Label/Project sync | Enhancement | Medium | Medium | **Done** | PM Automation |
-| BG-018 | PM Automation: Early drift detection (pre-work checklist, branch enforcement, telemetry emission, daily trajectory-guard) | Enhancement | High | Medium | **In Progress** | PM Automation |
+| BG-018 | PM Automation: Early drift detection (pre-work checklist, branch enforcement, telemetry emission, daily trajectory-guard) | Enhancement | High | Medium | **Done** | PM Automation |
 
 ### v1.0.0 — Production Ready
 **Target:** 2026-09-30 | **Status:** Planned
@@ -51,13 +51,14 @@
 - BG-001: AGENTS.md swap to canonical ✅
 - BG-002: skills/build/ correction ✅
 - BG-003: Orchestrator + telemetry ✅
-- BG-004: Missing lifecycle skills (intent-collect done, others pending) 🔄
+- BG-004: Missing lifecycle skills (all 8 done) ✅
 - BG-005: Cross-cutting skills (6/6 done) ✅
 - BG-011: PR Review Resolution Skill ✅
 - BG-012: PR Review Skill ✅
 - BG-013: PM Automation: Backlog → Project sync ✅
 - BG-014: PM Automation: Release/tag automation ✅
 - BG-015: PM Automation: Label/Project sync ✅
+- BG-018: PM Automation: Early drift detection ✅
 
 ---
 
