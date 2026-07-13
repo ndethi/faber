@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<!--
+  Intent Collection Form — v1
+  Per FRAMEWORK.md §3.5: Single-page, no framework, posts JSON to /api/intent/collect
+  Form fields map 1:1 to canonical JSON schema
+  Versioned: intent-form@v1.html
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Faber — Intent Collection</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-hover: #79b8ff;
+      --success: #3fb950;
+      --error: #f85149;
+      --radius: 6px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--muted); margin-bottom: 2rem; }
+    .field { margin-bottom: 1.5rem; }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      font-size: 0.9rem;
+    }
+    .hint { color: var(--muted); font-size: 0.8rem; margin-top: 0.25rem; }
+    textarea, input[type="text"], select {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    textarea { min-height: 120px; resize: vertical; }
+    textarea:focus, input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+    }
+    .radio-group { display: flex; gap: 1rem; }
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-weight: normal;
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .radio-group label:hover { border-color: var(--accent); }
+    .radio-group input { width: auto; }
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-weight: normal;
+      cursor: pointer;
+      margin-bottom: 0.3rem;
+    }
+    .checkbox-group input { width: auto; }
+    button {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 0.7rem 1.5rem;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: var(--accent-hover); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #result {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: none;
+    }
+    #result.success { border-color: var(--success); }
+    #result.error { border-color: var(--error); }
+    .artifact {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .artifact h3 { font-size: 0.9rem; margin-bottom: 0.4rem; color: var(--accent); }
+    .artifact pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+    .badge.v1 { background: var(--accent); color: var(--bg); }
+  </head>
+  <body>
+    <h1>Intent Collection <span class="badge v1">v1</span></h1>
+    <p class="subtitle">Deterministic front door for the Faber lifecycle. Same inputs → same outputs.</p>
+
+    <form id="intent-form">
+      <div class="field">
+        <label for="context">Project Context *</label>
+        <textarea id="context" name="context" required
+          placeholder="Describe the project: goals, audience, what you want to build..."></textarea>
+        <div class="hint">Client conversation, brief, or distilled context (free text)</div>
+      </div>
+
+      <div class="field">
+        <label>Production Context *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="production_context" value="prototype" checked> Prototype</label>
+          <label><input type="radio" name="production_context" value="normal"> Normal</label>
+          <label><input type="radio" name="production_context" value="client-production"> Client Production</label>
+        </div>
+        <div class="hint">Sets trajectory strictness: prototype→partial, normal→ordered, client-production→exact</div>
+      </div>
+
+      <div class="field">
+        <label>Constraints</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="constraints" value="brand-guidelines"> Brand Guidelines</label>
+          <label><input type="checkbox" name="constraints" value="budget"> Budget</label>
+          <label><input type="checkbox" name="constraints" value="timeline"> Timeline</label>
+          <label><input type="checkbox" name="constraints" value="legal"> Legal/Compliance</label>
+          <label><input type="checkbox" name="constraints" value="accessibility"> Accessibility</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Non-Goals (out of scope)</label>
+        <input type="text" id="non_goals" name="non_goals"
+          placeholder="e.g., mobile-app, backend-api (comma-separated)">
+        <div class="hint">Comma-separated list of what's explicitly out of scope</div>
+      </div>
+
+      <button type="submit" id="submit-btn">Generate Intent Artifacts</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+      const form = document.getElementById('intent-form');
+      const resultDiv = document.getElementById('result');
+      const submitBtn = document.getElementById('submit-btn');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Build canonical JSON from form fields
+        const context = document.getElementById('context').value.trim();
+        const productionContext = document.querySelector('input[name="production_context"]:checked').value;
+
+        const constraints = Array.from(document.querySelectorAll('input[name="constraints"]:checked'))
+          .map(cb => cb.value);
+
+        const nonGoalsRaw = document.getElementById('non_goals').value.trim();
+        const non_goals = nonGoalsRaw ? nonGoalsRaw.split(',').map(s => s.trim()).filter(s => s) : [];
+
+        const payload = {
+          context,
+          production_context: productionContext,
+          constraints,
+          non_goals,
+          stakeholders: [],
+          artifacts: {}
+        };
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Generating...';
+        resultDiv.style.display = 'block';
+        resultDiv.className = '';
+        resultDiv.innerHTML = '<p style="color: var(--muted)">Invoking intent-collect skill...</p>';
+
+        try {
+          const response = await fetch('/api/intent/collect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.status === 'success') {
+            resultDiv.className = 'success';
+            let html = '<h2 style="color: var(--success)">✓ Artifacts Generated</h2>';
+            html += `<div class="hint">Run ID: ${data.run_id || 'N/A'}</div>`;
+
+            for (const [name, content] of Object.entries(data.artifacts)) {
+              html += `
+                <div class="artifact">
+                  <h3>${name}</h3>
+                  <pre>${escapeHtml(content)}</pre>
+                </div>
+              `;
+            }
+
+            // Add download links
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            html += `<p style="margin-top:1rem"><a href="${url}" download="intent-result.json" style="color: var(--accent)">Download full result (JSON)</a></p>`;
+
+            resultDiv.innerHTML = html;
+          } else {
+            resultDiv.className = 'error';
+            const errors = data.errors || [data.error || 'Unknown error'];
+            resultDiv.innerHTML = `<h2 style="color: var(--error)">✗ Validation Error</h2><ul style="color: var(--error)">${errors.map(e => `<li>${escapeHtml(e)}</li>`).join('')}</ul>`;
+          }
+        } catch (err) {
+          resultDiv.className = 'error';
+          resultDiv.innerHTML = `<h2 style="color: var(--error)">✗ Request Failed</h2><p style="color: var(--error)">${escapeHtml(err.message)}</p>`;
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Generate Intent Artifacts';
+        }
+      });
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+    </script>
+  </body>
+</html>
