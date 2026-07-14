@@ -643,7 +643,7 @@ def process_intent(chat_id: int):
 PRODUCTION_CONTEXT: {canonical['production_context']}
 CONSTRAINTS: {', '.join(canonical['constraints'])}
 NON_GOALS: {', '.join(canonical['non_goals'])}
-STAKEHOLDERS: {'; '.join([f'{s['role']}:{s['name']}' for s in canonical['stakeholders']])}
+            STAKEHOLDERS: {'; '.join([f'{s["role"]}:{s["name"]}' for s in canonical["stakeholders"]])}
             """.strip()
             
             cmd = [
