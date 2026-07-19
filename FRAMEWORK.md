@@ -214,3 +214,26 @@ Use the already-distilled Rohaki context as the **scaling test**, not the goal: 
 - **Roadmap as code**: milestones and roadmaps source from `docs/roadmap.md` (SSOT), not a proprietary board. The skill reads/writes this file, keeping human and machine views in sync.
 
 This design makes PM operations **composable** (orchestrator can invoke `pm-github` alongside `build`, `evaluate`, etc.), **observable** (telemetry captures every proposal and application), and **self-documenting** (the skill *is* the process spec).
+
+## 13. Deploy targets & domain conventions
+
+Every Faber-managed project declares **two deploy targets**, one per long-lived branch. Ephemeral PR previews are *not* deploy targets — they are review surfaces.
+
+| Branch | Deploy target | Purpose | URL form |
+|--------|---------------|---------|----------|
+| `main` | **Production** | Customer-facing canonical site | Project-owned domain, e.g. `faberframework.com` or `rohaki-mvp.faberframework.com` |
+| `dev` | **Staging** | Integration; what reviewers see before promoting to `main` | Custom dev subdomain (e.g. `dev.faberframework.com`) **or** Cloudflare Pages branch alias (e.g. `dev.<project>.pages.dev`) |
+| `hermes/<topic>` | **Preview** (optional) | Per-PR review surface; ephemeral | `preview/<branch>.<project>.pages.dev` |
+
+### Rules
+
+1. **`main` deploys to production; `dev` deploys to staging.** The CI/CD configuration (e.g. `.github/workflows/deploy.yml`) MUST route `push: branches: [main]` to the production target and `push: branches: [dev]` to the staging target. PR previews are optional and must be `continue-on-error: true` so they never block merge.
+2. **A project declares both domains in its repo** (e.g. `faber.config.yaml` or `wrangler.toml`), not in agent memory. The `scaffold` and `deploy` skills read this declaration; they do not hardcode URLs.
+3. **Custom domains require their own Cloudflare Pages project per target** when the Pages project's `production_branch` field cannot disambiguate (each Pages project has exactly one production branch). The recommended pattern is two Pages projects: `<project>` (production, `production_branch: main`) and `<project>-dev` (staging, `production_branch: dev`), each bound to its custom domain via Cloudflare's custom domains UI. The `deploy` skill writes to the correct project based on the triggering branch.
+4. **The `domain-suggest` skill** is the sanctioned way to pick a production domain. Given a project brief, it probes RDAP/whois and returns 3 candidates with rationale (memorability, availability, TLD fit). Output is deterministic for the same brief; the human picks.
+5. **Staging is not a throwaway env.** It is the surface reviewers use to approve the `dev → main` PR. Staging should be visually indistinguishable from production except for a non-maskable environment banner.
+6. **No production deploy without staging sign-off.** The `dev → main` PR must reference the staging URL; reviewer visits it before approving the merge. This is a HITL gate, not an automated check.
+
+### Why this is a framework rule, not a project setting
+
+Faber's contract is that any project managed by the framework deploys the same way, reviews the same way, and promotes the same way. Leaving domain routing to ad-hoc per-repo config produced the rohaki-mvp situation (one Pages project, no staging surface, blocked deploys, no visibility before merge). Encoding it as §13 makes staging a first-class surface in every Faber project — and makes the rule itself evaluable (the `deploy` skill asserts both targets are configured before running).

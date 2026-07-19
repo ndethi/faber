@@ -220,3 +220,16 @@
 - **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit, BG-004 remaining lifecycle skills (scaffold, evaluate, deploy, publish, observe, feedback)
 
 ---
+
+---
+
+## Iteration: BG-019 — Deploy targets & domain conventions (2026-07-19)
+
+- **Spec ref**: User directive 2026-07-19: production domain faberframework.com, dev/staging on custom Cloudflare Pages branch alias. Encoded into FRAMEWORK.md as §13.
+- **Plan**:
+  1. Add FRAMEWORK.md §13 "Deploy targets & domain conventions" — production = canonical URL (project's own domain, e.g. faberframework.com), staging = Cloudflare Pages branch alias for `dev` (e.g. dev.<project>.pages.dev or custom dev subdomain).
+  2. Add matching AGENTS.md §2.12 "Deploy target discipline" — every Faber-managed project declares both domains; `deploy` skill gates on `main`→prod, `dev`→staging.
+  3. Add `framework/lessons.md` lesson: "Staging branch ≠ preview deploy — `dev` has its own deploy target, distinct from ephemeral PR previews."
+- **Expected diff**: framework docs only — ~120 lines added across FRAMEWORK.md, AGENTS.md, framework/lessons.md. No skill code; no eval (docs-only iteration per §5 §2.5 plan-before-edit).
+- **HITL**: PR to dev, human merge.
+
