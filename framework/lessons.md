@@ -6,6 +6,18 @@ Referenced in PRs to capture institutional knowledge.*
 
 ---
 
+## 2026-07-19: Staging is a deploy target, not a throwaway env
+
+**Lesson:** The `dev` branch must have its own distinct deploy target (staging) used for HITL review before promoting to `main`. Ephemeral PR previews are not deploy targets.
+
+**Context:** During rohaki-mvp deployment, it became clear that conflating staging with PR previews caused confusion: the `dev` branch had no dedicated deploy surface, reviewers had nowhere to visit before approving `dev → main`, and CI deploy-preview jobs were non-blocking noise. Encoding both targets as first-class framework rules fixed the gap.
+
+**Rule:** Every Faber-managed project declares two deploy targets: `main` → production (customer-facing canonical domain), `dev` → staging (integration surface reviewers visit). The `deploy` skill routes on the triggering branch. Staging is visually indistinguishable from production except for a non-maskable environment banner; PR previews remain ephemeral, continue-on-error.
+
+**Applied in:** FRAMEWORK.md §13 and AGENTS.md §2.12 added this iteration.
+
+---
+
 ## 2026-07-04: skill-author scaffold extension pattern
 
 **Lesson:** `skill-author` produces a minimal scaffold; framework-scoped skills with multi-module implementations need explicit extension in the same PR.

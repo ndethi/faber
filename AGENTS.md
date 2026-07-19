@@ -60,6 +60,15 @@ On `/stop` (TUI or Telegram gateway): halt cleanly, post one-line status to Tele
 ### 2.11 PM & GitHub operations route through `skills/pm-github/`
 Do not open issues, create tags, edit project fields, or bulk-label via ad-hoc scripts. Every PM write is a proposal until human-approved. `.github/pm-config.yaml` overrides skill defaults per repo.
 
+### 2.12 Deploy target discipline (per FRAMEWORK.md §13)
+Every Faber-managed project MUST declare both a **production** and a **staging** deploy target in-repo (e.g. `faber.config.yaml` or `wrangler.toml`). The `deploy` skill reads this declaration; it does not hardcode URLs.
+
+- **`main` → production** canonical domain (project-owned).
+- **`dev` → staging** (custom dev subdomain or Cloudflare Pages branch alias).
+- Ephemeral PR previews are *not* deploy targets — they are review surfaces, `continue-on-error: true`.
+- The `domain-suggest` skill is the sanctioned way to pick a production domain (returns 3 candidates; human picks).
+- Merging `dev → main` is a HITL gate: the PR must reference the staging URL and the reviewer must visit it before approving.
+
 ---
 
 ## 3. Skill Contract (per FRAMEWORK.md §1)
