@@ -233,3 +233,51 @@
 - **Expected diff**: framework docs only — ~120 lines added across FRAMEWORK.md, AGENTS.md, framework/lessons.md. No skill code; no eval (docs-only iteration per §5 §2.5 plan-before-edit).
 - **HITL**: PR to dev, human merge.
 
+
+
+---
+## Iteration 9 — 2026-07-20T06:43:50ZZ
+
+**Action:** Add domain-suggest skill (BG-020)
+
+- **Spec reference:** FRAMEWORK.md §13 "Deploy targets & domain conventions" rule 4: The `domain-suggest` skill is the sanctioned way to pick a production domain. Given a project brief, it probes RDAP/whois and returns 3 candidates with rationale (memorability, availability, TLD fit). Output is deterministic for the same brief; the human picks.
+
+- **Plan:**
+  1. **Run skill-author** to generate scaffold at `skills/domain-suggest/` with:
+     - name: domain-suggest
+     - description: "Given a project brief, probes RDAP/whois and returns 3 production domain candidates with rationale (memorability, availability, TLD fit). Output deterministic for same brief; human picks."
+     - author: ndethi
+     - license: MIT
+     - tags: ["domain", "suggest", "whois", "rdap", "naming", "framework"]
+  2. **Extend scaffold** (same branch, same PR):
+     - Modular scripts: `cli.py` (Typer entrypoint), `generators.py` (RDAP/whois probing logic), `validators.py` (input validation, output sanity)
+     - Config: `config/defaults.yaml` (RDAP endpoints, timeout, TLD preferences, scoring weights)
+     - Assets: none initially
+     - Framework wiring:
+       - Update `AGENTS.md` §2.12 "Deploy target discipline" to reference `domain-suggest` skill for generating domain candidates
+       - Ensure `FRAMEWORK.md` §13 is already present (from BG-019)
+       - Add `docs/domain-suggest.md` human HOW-TO guide
+       - Add lesson to `framework/lessons.md`: "Domain suggestions must be deterministic, verifiable, and actionable — never fabricate availability; show TODO: for unknown TLDs or ambiguous WHOIS responses."
+  3. **Write evals suite**:
+     - `test_generators.py` — test RDAP/whois parsing, caching, error handling
+     - `test_validators.py` — test brief validation, candidate scoring, dedup
+     - `test_dry_run_never_writes.py` — assert no network calls, no file writes when `--dry-run`
+     - `test_proposal_shape.py` — assert output JSON schema matches expectation
+     - Fixtures: sample briefs, mocked RDAP responses
+  4. **Verify all evals pass**: `python -m pytest skills/domain-suggest/evals/ -v`
+  5. **Update STATE.json**: iteration++, last_commit_sha, updated timestamp
+  6. **Update backlog.md**: set BG-020 status to done
+  7. **Update iteration-log.md**: result summary
+  8. **Commit, push, create PR to dev**
+
+- **Expected diff:** ~200-300 lines across SKILL.md, scripts/, config/, evals/, docs/, framework/
+
+- **Branch:** hermes/domain-suggest-skill (already checked out)
+
+- **PR target:** dev (referencing skill.domain-suggest@1.0.0 registry entry when created)
+
+- **Constraint:** Per FRAMEWORK.md §1 and HERMES-BRIEF §1.8: no further skills until this one is eval-compliant.
+
+- **HITL gate:** PR requires adversarial review (different model/agent), human review, and CI gates (evals, trajectory-guard conformance).
+
+- **Next:** After BG-020 merge, BG-006 _inbox/ & build-plan, BG-007 CI workflow.

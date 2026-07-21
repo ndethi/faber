@@ -1,0 +1,75 @@
+# Default configuration for domain-suggest skill
+# This file can be overridden by .domain-suggest.yaml in the project root
+# or domain-suggest config in framerwork-wide settings
+
+# RDAP/WHOIS service configuration
+rdap:
+  # Base URLs for RDAP services (fallback chain)
+  # These are public RDAP endpoints - in production you might want to use
+  # a dedicated service or local cache
+  endpoints:
+    - "https://rdap.org/domain/"          # RDAP.org (generic)
+    - "https://rdap.verisign.com/com/v1/domain/"  # Verisign for .com/.net
+    - "https://rdap.nic.org/domain/"      # PIR for .org
+    - "https://rdap.awsregistry.com/domain/"      # AWS Registry for .aws
+  timeout_seconds: 10
+  max_retries: 2
+  retry_backoff_seconds: 1
+
+# whois fallback (if RDAP fails or unavailable)
+whois:
+  # Use system weous command or fallback to web-based whois
+  use_system_whois: true
+  timeout_seconds: 10
+
+# Domain generation preferences
+naming:
+  # Preferred TLDs in order of preference
+  # .com is most trusted, then country/org TLDs, then newer tech TLDs
+  preferred_tlds:
+    - ".com"
+    - ".org"
+    - ".net"
+    - ".io"
+    - ".dev"
+    - ".tech"
+    - ".app"
+    - ".online"
+    - ".site"
+  # TLDs to avoid for professional projects (unless specifically requested)
+  avoided_tlds:
+    - ".xyz"
+    - ".top"
+    - ".loan"
+  # Maximum length of domain name (before TLD)
+  max_name_length: 20
+  # Minimum length
+  min_name_length: 3
+
+# Scoring weights (must sum to 100)
+scoring:
+  availability: 40      # Whether domain is available/registerable
+  length: 20           # Shorter names are generally better
+  keyword_relevance: 20 # Contains relevant keywords from project
+  tld_appropriateness: 10 # How well TLD fits project type
+  readability: 10      # How easy to pronounce/spell
+
+# Cache configuration
+cache:
+  enabled: true
+  # Directory for cache files (relative to project or tmp)
+  directory: ".domain-suggest-cache"
+  ttl_seconds: 86400   # 24 hours
+
+# Safety limits
+limits:
+  max_domains_to_check: 50   # Don't check more than this many domains per request
+  max_keywords: 10          # Extract at most this many keywords from brief
+  max_variants_per_keyword: 20 # Limit combinations to prevent explosion
+
+# Feature flags
+features:
+  use_typo_variations: false   # Generate common typos? (usually not recommended)
+  use_numbers: true           # Allow numbers in domain suggestions
+  use_hyphens: true           # Allow hyphens (though generally discouraged)
+  double_hyphens: false       # Allow consecutive hyphens (never allowed in reality)

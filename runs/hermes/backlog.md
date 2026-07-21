@@ -25,6 +25,7 @@
 | BG-014 | User Request | **PM Automation: Release/tag automation** — semantic version from conventional commits, generate release notes, create tag + GitHub Release, update docs/roadmap.md | MEDIUM | **done** (PR #25 merged) |
 | BG-015 | User Request | **PM Automation: Label/Project sync** — label taxonomy sync workflow, project bootstrap workflow for new repos | MEDIUM | **done** (PR #26 merged) |
 | BG-018 | User Request | **PM Automation: Early drift detection** — pre-work checklist, branch enforcement hook, telemetry emission in skills, daily trajectory-guard cron | MEDIUM | **done** (all items complete) |
+|| BG-020 | PR #62 | **Add domain-suggest skill** — SKILL.md + scripts/ + evals/ to generate production domain candidates per FRAMEWORK.md §13 | MEDIUM | in_progress |
 
 ## Low Priority / Tracking
 
