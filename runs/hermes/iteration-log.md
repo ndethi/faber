@@ -330,6 +330,53 @@
 
 ---
 
+## Iteration 11 — 2026-07-26T13:45:00Z
+
+**Action:** Faber Launch Splash — `faber-splash` skill (BG-022)
+
+- **Source:** Phase 2 feature request — "The framing matters here. The splash isn't just a landing page — it's the marketing artifact that proves the framework can ship itself."
+- **Skill name:** `faber-splash` (framework-scoped, lifecycle-adjacent)
+- **Spec reference:** FRAMEWORK.md §1 (skill contract), §2 (cross-cutting); build-plan/build.06-rohaki-fixture.md (splash page is the Faber self-hosting proof); skills/faber-design-system/ (provides green gradients, card grids, stats sections, motion primitives)
+- **Plan:**
+  1. **Create `skills/faber-splash/{SKILL.md, scripts/, evals/, assets/}`** per FRAMEWORK skill contract
+  2. **Draft SKILL.md** at `skills/faber-splash/SKILL.md` with:
+     - Description: "Generates the Faber framework launch splash page (faber-www) — a static Astro site built with the faber-design-system skill, deployed by Faber CI/CD. Proves the framework ships itself: (a) what Faber is, (b) what shipped (rohaki-mvp + splash), (c) the loop — live PR/deploy timeline. CTA → Intent Wizard (/intent)."
+     - Inputs: PROJECT_NAME, OUTPUT_DIR, FIXTURE (default: faber-brand), DEPLOY_TARGETS, INTENT_WIZARD_URL
+     - Outputs: Complete Astro project at OUTPUT_DIR with splash page, loop diagram, deploy receipts
+     - Interface: JSON in/out for orchestrator compatibility
+  3. **Implement scripts/**:
+     - `generate_splash.py` — main entry (Typer CLI): --project-name, --output-dir, --fixture, --deploy-targets
+     - `ci_workflow.py` — generates GitHub Actions deploy.yml with lint-and-test → deploy-preview (PR) / deploy-staging (dev) / deploy-production (main)
+  4. **Assets/templates/**:
+     - `index.astro.template` — splash page with hero, three scrolls, loop diagram, CTA
+     - `LoopDiagram.astro.template` — live PR→CI→Deploy timeline (fetches GitHub API)
+     - `DeployReceipts.astro.template` — deploy log panel component
+     - `BaseLayout.astro.template` — minimal layout with faber-design-system import
+  5. **Add evals/**:
+     - `test_splash.py` — generates complete Astro project, asserts file structure, three scrolls, components present
+     - `test_splash.py` — validates CI workflow structure
+     - `test_splash.py` — deterministic byte-for-byte output
+  6. **Registry entry** in `prompts/_registry.md` (new skill entry)
+  7. **PR** targeting `dev` referencing `skill.faber-splash@1.0.0`
+- **Dependencies:** `faber-design-system` skill (merged on dev), GitHub API access for deploy receipts
+- **Constraints:**
+  - Per AGENTS.md §2.7: no autonomous skill creation → manual PR (skill-author not yet used for framework skills)
+  - Per FRAMEWORK.md §1: must have evals
+  - HITL gate: human reviews generated splash page before merge
+  - **Deploy target discipline:** Splash page declares production (faberframework.com) + staging (dev.faberframework.com) per FRAMEWORK.md §13
+- **Expected diff:** ~500-600 lines across SKILL.md, scripts/, evals/, assets/
+- **Branch:** hermes/faber-splash (this branch)
+- **Priority:** HIGH (BG-022)
+- **Related:** Enables BG-024 (intent wizard CTA), demonstrates framework self-hosting
+- **Result:** ✓ SKILL.md created with spec; ✓ generate_splash.py implements generate command; ✓ invokes faber-design-system for tokens; ✓ generates complete Astro project (index.astro with 3 scrolls + CTA, LoopDiagram.astro with live GitHub API fetch, DeployReceipts.astro with mock receipts, BaseLayout.astro with design system import); ✓ CI/CD workflow with lint-and-test → deploy-preview (PR) / deploy-staging (dev) / deploy-production (main); ✓ 13 evals pass (structure, components, CI, determinism); ✓ CLI generates complete project
+- **Diff:** ~1,800 lines added across SKILL.md, scripts/generate_splash.py, scripts/ci_workflow.py, evals/test_splash.py
+- **Next:** BG-023 Content CMS + D1 Worker (faber-cms skill)
+- **Result:** ✓ SKILL.md created with pushy description; ✓ design_system.py implements generate/apply commands; ✓ tokens_to_tailwind extracts all color tokens including semantic + gradients; ✓ resolve_token_references handles embedded {path} in strings; ✓ generate_component_css emits card/button/badge/grid/section/typography utilities; ✓ 27 evals pass (test_tokens.py 17, test_apply.py 5, test_determinism.py 5); ✓ CLI generates CSS custom properties + Tailwind config + W3C JSON; ✓ apply command updates astro.config.mjs + global.css; ✓ Deterministic byte-for-byte output verified
+- **Diff:** ~2,800 lines added across SKILL.md, scripts/design_system.py, evals/*.py, assets/templates/tailwind.config.j2
+- **Next:** BG-022 Faber Launch Splash (faber-splash skill)
+
+---
+
 ## Iteration 11 — 2026-07-26T12:00:00Z
 
 **Action:** Faber Launch Splash — `faber-splash` skill (BG-022)
