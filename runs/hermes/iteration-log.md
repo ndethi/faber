@@ -327,3 +327,76 @@
 - **Result:** ✓ SKILL.md created with pushy description; ✓ design_system.py implements generate/apply commands; ✓ tokens_to_tailwind extracts all color tokens including semantic + gradients; ✓ resolve_token_references handles embedded {path} in strings; ✓ generate_component_css emits card/button/badge/grid/section/typography utilities; ✓ 27 evals pass (test_tokens.py 17, test_apply.py 5, test_determinism.py 5); ✓ CLI generates CSS custom properties + Tailwind config + W3C JSON; ✓ apply command updates astro.config.mjs + global.css; ✓ Deterministic byte-for-byte output verified
 - **Diff:** ~2,800 lines added across SKILL.md, scripts/design_system.py, evals/*.py, assets/templates/tailwind.config.j2
 - **Next:** BG-022 Faber Launch Splash (faber-splash skill)
+
+---
+
+## Iteration 11 — 2026-07-26T12:00:00Z
+
+**Action:** Faber Launch Splash — `faber-splash` skill (BG-022)
+
+- **Source:** Phase 2 feature request — "The framing matters here. The splash isn't just a landing page — it's the marketing artifact that proves the framework can ship itself."
+- **Skill name:** `faber-splash` (framework-scoped, lifecycle-adjacent)
+- **Spec reference:** FRAMEWORK.md §1 (skill contract), §2 (cross-cutting); build-plan/build.06-rohaki-fixture.md (splash page is the Faber self-hosting proof); skills/faber-design-system/ (provides green gradients, card grids, stats sections, motion primitives)
+- **Plan:**
+  1. **Create `skills/faber-splash/{SKILL.md, scripts/, evals/, assets/}`** per FRAMEWORK skill contract
+  2. **Draft SKILL.md** at `skills/faber-splash/SKILL.md` with:
+     - Description: "Generates the Faber framework launch splash page (faber-www) — a static Astro site built with the faber-design-system skill, deployed by Faber CI/CD. Proves the framework ships itself: (a) what Faber is, (b) what shipped (rohaki-mvp + splash), (c) the loop — live PR/deploy timeline. CTA → Intent Wizard (/intent)."
+     - Inputs: PROJECT_NAME, OUTPUT_DIR, FIXTURE (default: faber-brand), DEPLOY_TARGETS, INTENT_WIZARD_URL
+     - Outputs: Complete Astro project at OUTPUT_DIR with splash page, loop diagram, deploy receipts
+     - Interface: JSON in/out for orchestrator compatibility
+  3. **Implement scripts/**:
+     - `generate_splash.py` — main entry (Typer CLI): --project-name, --output-dir, --fixture, --deploy-targets
+     - `apply_design_system.py` — invokes faber-design-system --fixture to get tokens
+     - `build_splash_page.py` — generates index.astro with three scroll sections + CTA
+     - `build_loop_diagram.py` — generates SVG/HTML loop diagram (PRs → CI → deploys)
+     - `fetch_deploy_receipts.py` — queries GitHub API for recent PRs, CI runs, deployments
+     - `setup_astro_project.py` — creates package.json, astro.config.mjs, wrangler.toml, CI workflows
+  4. **Assets/templates/**:
+     - `index.astro.template` — splash page with hero, three scrolls, loop diagram, CTA
+     - `loop-diagram.svg.template` — interactive loop diagram
+     - `deploy-receipt.astro.template` — deploy log panel component
+     - `package.json.template`, `astro.config.mjs.template`, `wrangler.toml.template`
+  5. **Add evals/**:
+     - `test_splash_generation.py` — generates complete Astro project, asserts file structure
+     - `test_loop_diagram.py` — verifies SVG/HTML contains expected nodes (PR, CI, Deploy)
+     - `test_deploy_receipts.py` — mocks GitHub API, verifies receipt formatting
+     - `test_design_system_integration.py` — verifies faber-design-system tokens applied
+     - `test_determinism.py` — same input → identical output
+  6. **Registry entry** in `prompts/_registry.md` (new skill entry)
+  7. **PR** targeting `dev` referencing `skill.faber-splash@1.0.0`
+- **Dependencies:** `faber-design-system` skill (merged on dev), GitHub API access for deploy receipts
+- **Constraints:**
+  - Per AGENTS.md §2.7: no autonomous skill creation → manual PR (skill-author not yet used for framework skills)
+  - Per FRAMEWORK.md §1: must have evals
+  - HITL gate: human reviews generated splash page before merge
+  - **Deploy target discipline:** Splash page declares production (faberframework.com) + staging (dev.faberframework.com) per FRAMEWORK.md §13
+- **Expected diff:** ~500-600 lines across SKILL.md, scripts/, evals/, assets/
+- **Branch:** hermes/faber-splash (this branch)
+- **Priority:** HIGH (BG-022)
+- **Related:** Enables BG-024 (intent wizard CTA), demonstrates framework self-hosting
+
+---
+     - `ci_workflow.py` — generates .github/workflows/deploy.yml targeting production domain
+  4. **Assets/templates/:**
+     - `index.astro.template` — splash page template with three scrolls
+     - `LoopTimeline.astro.template` — live PR/deploy timeline component
+     - `DeployReceipts.astro.template` — deploy evidence panel
+     - `BaseLayout.astro.template` — minimal layout with faber-design-system import
+  5. **Add evals/:**
+     - `test_splash.py` — generates splash project, validates Astro structure, components present
+     - `test_loop_timeline.py` — mocks gh API, validates timeline renders PRs/commits
+     - `test_deploy_receipts.py` — validates receipt panel structure
+     - `test_ci_deploy.py` — validates workflow.yml targets production domain
+     - `test_determinism.py` — same input → identical output
+  6. **Registry entry** in `prompts/_registry.md` (new skill entry)
+  7. **PR** targeting `dev` referencing `skill.faber-splash@1.0.0`
+- **Dependencies:** `faber-design-system` skill merged to dev (PR #68), `fixtures/rohaki` design tokens
+- **Constraints:**
+  - Per AGENTS.md §2.7: no autonomous skill creation → manual PR
+  - Per FRAMEWORK.md §1: must have evals
+  - HITL gate: human reviews generated splash page before merge
+  - **Deploy target discipline (FRAMEWORK §13):** Splash declares production domain (faberframework.com or faber.nousresearch.com), staging on dev branch alias
+- **Expected diff:** ~500-600 lines across SKILL.md, scripts/, evals/, assets/
+- **Branch:** hermes/faber-splash (this branch)
+- **Priority:** HIGH (BG-022)
+- **Related:** Uses BG-021 design system; enables BG-024 (intent wizard CTA); proves framework self-hosting
