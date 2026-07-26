@@ -78,6 +78,10 @@ jobs:
           for skill in skills/*/; do
             if [ -d "$skill/evals" ]; then
               echo "Running evals for $(basename $skill)..."
+              if [ -f "$skill/requirements.txt" ]; then
+                echo "Installing dependencies for $(basename $skill)..."
+                pip install --no-cache-dir --quiet -r "$skill/requirements.txt"
+              fi
               python -m pytest "$skill/evals/" -v || exit 1
             fi
           done

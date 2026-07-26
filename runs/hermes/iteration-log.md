@@ -281,3 +281,49 @@
 - **HITL gate:** PR requires adversarial review (different model/agent), human review, and CI gates (evals, trajectory-guard conformance).
 
 - **Next:** After BG-020 merge, BG-006 _inbox/ & build-plan, BG-007 CI workflow.
+
+---
+
+## Iteration 10 — 2026-07-26T08:30:00Z
+
+**Action:** Design System Foundation — `faber-design-system` skill (BG-021)
+
+- **Source:** Phase 2 feature request — "Design system foundation first (#2 partially — tokens + Tailwind + motion primitives). Without this, everything after it inherits the current 'pretty basic' baseline."
+- **Skill name:** `faber-design-system` (framework-scoped, lifecycle-adjacent)
+- **Spec reference:** FRAMEWORK.md §1 (skill contract), §2 (cross-cutting skills); fixtures/rohaki/design-tokens.* (Rohaki fixture created in previous session); skills/scaffold/scripts/scaffold.py (current generic defaults)
+- **Plan:**
+  1. **Create `skills/faber-design-system/{SKILL.md, scripts/, evals/, assets/}`** per FRAMEWORK skill contract
+  2. **Draft SKILL.md** at `skills/faber-design-system/SKILL.md` with:
+     - Description: "Generates project-specific design system assets (Tailwind config, CSS custom properties, component utility classes) from a Faber fixture's design tokens. Extends scaffold's generic defaults with fixture-specific theming (e.g., Rohaki's green gradients, card grids, stats sections)."
+     - Inputs: FIXTURE_NAME (e.g., "rohaki"), OUTPUT_DIR, TEMPLATE_OVERRIDES
+     - Outputs: tailwind.config.js, src/styles/design-tokens.css, src/components/ (utility classes), design-tokens.json (W3C format)
+     - Interface: JSON in/out for orchestrator compatibility
+  3. **Implement scripts/**:
+     - `generate_tokens.py` — reads fixture design-tokens.json, emits CSS custom properties + Tailwind config + W3C JSON
+     - `generate_components.py` — emits component utility classes (card, button, badge, grid, section, typography) as CSS + Tailwind @layer utilities
+     - `design_system.py` — main entry point (Typer CLI): --fixture, --output-dir, --format (css|tailwind|json|all)
+     - `apply_to_project.py` — copies generated assets to an Astro project, updates astro.config.mjs imports
+  4. **Assets/templates/**:
+     - `tailwind.config.template.js` — framework base + fixture extension pattern
+     - `design-tokens.css.template` — CSS custom properties template
+     - `components.css.template` — component utility classes template
+  5. **Add evals/**:
+     - `test_tokens.py` — given rohaki fixture, emits correct CSS vars + Tailwind config + JSON
+     - `test_components.py` — asserts component utilities match fixture spec (card grids, stats grids, gradients)
+     - `test_determinism.py` — same input → byte-for-byte identical output
+     - `test_apply.py` — applies to temp Astro project, verifies imports resolve
+  6. **Registry entry** in `prompts/_registry.md` (new skill entry)
+  7. **PR** targeting `dev` referencing `skill.faber-design-system@1.0.0`
+- **Dependencies:** Fixture exists at `fixtures/rohaki/design-tokens.json` (created in previous session)
+- **Constraints:**
+  - Per AGENTS.md §2.7: no autonomous skill creation → manual PR (skill-author not yet used for framework skills)
+  - Per FRAMEWORK.md §1: must have evals
+  - HITL gate: human reviews generated artifacts before merge
+  - **Key distinction:** This skill does NOT replace scaffold defaults. It EXTENDS them. Projects opt-in via `--fixture rohaki`. Scaffold remains generic.
+- **Expected diff:** ~400-500 lines across SKILL.md, scripts/, evals/, assets/
+- **Branch:** hermes/faber-design-system (this branch)
+- **Priority:** HIGH (BG-021)
+- **Related:** Enables BG-022 (splash page), BG-024 (intent wizard), Rohaki MVP theming
+- **Result:** ✓ SKILL.md created with pushy description; ✓ design_system.py implements generate/apply commands; ✓ tokens_to_tailwind extracts all color tokens including semantic + gradients; ✓ resolve_token_references handles embedded {path} in strings; ✓ generate_component_css emits card/button/badge/grid/section/typography utilities; ✓ 27 evals pass (test_tokens.py 17, test_apply.py 5, test_determinism.py 5); ✓ CLI generates CSS custom properties + Tailwind config + W3C JSON; ✓ apply command updates astro.config.mjs + global.css; ✓ Deterministic byte-for-byte output verified
+- **Diff:** ~2,800 lines added across SKILL.md, scripts/design_system.py, evals/*.py, assets/templates/tailwind.config.j2
+- **Next:** BG-022 Faber Launch Splash (faber-splash skill)

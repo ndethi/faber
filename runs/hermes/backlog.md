@@ -27,6 +27,15 @@
 | BG-018 | User Request | **PM Automation: Early drift detection** — pre-work checklist, branch enforcement hook, telemetry emission in skills, daily trajectory-guard cron | MEDIUM | **done** (all items complete) |
 || BG-020 | PR #62 | **Add domain-suggest skill** — SKILL.md + scripts/ + evals/ to generate production domain candidates per FRAMEWORK.md §13 | MEDIUM | in_progress |
 
+## High Priority (Phase 2 Features)
+
+| ID | Source | Item | Priority | Status |
+|----|--------|------|----------|--------|
+| BG-021 | User Request (Phase 2) | **Design System Foundation (faber-design-system skill)** — Design tokens + Tailwind config + motion primitives (green gradients, card grids, stats section). Rohaki-themed defaults as Faber fixture. One iteration. | HIGH | **done** (evals passing, PR pending) |
+| BG-022 | User Request (Phase 2) | **Faber Launch Splash (faber-splash skill)** — New repo `faber-www` or fresh branch. Built with #1's design system. Splash page: (a) what Faber is, (b) what shipped (rohaki-mvp + splash), (c) loop diagram + live PR/deploy receipts. CTA → Intent Wizard. One iteration. | HIGH | pending |
+| BG-023 | User Request (Phase 2) | **Content CMS + D1 Worker (faber-cms skill)** — Two iterations: (a) schema + Worker + GET/POST + CF Access gate; (b) admin UI embedded in Astro. Content from D1 instead of static files. Two iterations. | HIGH | pending |
+| BG-024 | User Request (Phase 2) | **Intent Wizard (faber-intent-wizard skill)** — Public `/intent` route, reuses intent-collect spec-emission logic, writes to D1 `intents` table, Telegram notifications, backlog draft gen. One iteration. | HIGH | pending |
+
 ## Low Priority / Tracking
 
 | ID | Source | Item | Priority | Status |

@@ -1,0 +1,27 @@
+/**
+ * {{ fixture }} Tailwind Config
+ * Extends Faber framework defaults with {{ fixture }} design tokens.
+ * 
+ * Usage:
+ *   import {{fixture}}Config from './tailwind.config.js';
+ *   export default { ...{{fixture}}Config, content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'] };
+ */
+
+import defaultConfig from '{{ framework_base_import }}';
+
+const {{fixture}}Theme = {
+  theme: {
+    extend: {{ tailwind_config | tojson(indent=4) }}
+  },
+  plugins: [
+    // Component utilities added via @apply in design-tokens.css
+    function({ addUtilities, addComponents, theme }) {
+      // Custom utilities are in design-tokens.css
+    },
+  ],
+};
+
+export default {
+  ...defaultConfig,
+  ...{{fixture}}Theme,
+};

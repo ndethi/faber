@@ -1,0 +1,492 @@
+/**
+ * Rohaki Design Tokens - CSS Custom Properties
+ * ESG Bamboo Supply Chain brand tokens
+ * 
+ * Usage: @import 'fixtures/rohaki/design-tokens.css';
+ * Or copy into your project's global.css
+ * 
+ * This is a FABER FIXTURE - not a framework default.
+ * Framework defaults are in skills/scaffold/scripts/scaffold.py
+ */
+
+:root {
+  /* === COLOR: BRAND PALETTE === */
+  /* Bamboo Green - Primary brand color */
+  --rohaki-color-bamboo-50:  #f0fdf4;
+  --rohaki-color-bamboo-100: #dcfce7;
+  --rohaki-color-bamboo-200: #bbf7d0;
+  --rohaki-color-bamboo-300: #86efac;
+  --rohaki-color-bamboo-400: #4ade80;
+  --rohaki-color-bamboo-500: #22c55e;
+  --rohaki-color-bamboo-600: #16a34a;
+  --rohaki-color-bamboo-700: #15803d;
+  --rohaki-color-bamboo-800: #166534;
+  --rohaki-color-bamboo-900: #14532d;
+  --rohaki-color-bamboo-950: #052e16;
+
+  /* Sage Green - Secondary brand color */
+  --rohaki-color-sage-50:  #f6fef7;
+  --rohaki-color-sage-100: #e8fce5;
+  --rohaki-color-sage-200: #d1f9cb;
+  --rohaki-color-sage-300: #a3f29d;
+  --rohaki-color-sage-400: #70e66f;
+  --rohaki-color-sage-500: #4ade80;
+  --rohaki-color-sage-600: #22c55e;
+  --rohaki-color-sage-700: #16a34a;
+  --rohaki-color-sage-800: #15803d;
+  --rohaki-color-sage-900: #166534;
+  --rohaki-color-sage-950: #052e16;
+
+  /* Earth Tones - Accent/neutral warmth */
+  --rohaki-color-earth-50:  #fdf8f3;
+  --rohaki-color-earth-100: #faefdf;
+  --rohaki-color-earth-200: #f5deb3;
+  --rohaki-color-earth-300: #e8c492;
+  --rohaki-color-earth-400: #d8a76a;
+  --rohaki-color-earth-500: #c98b4a;
+  --rohaki-color-earth-600: #b87336;
+  --rohaki-color-earth-700: #9a5d2d;
+  --rohaki-color-earth-800: #7d4b28;
+  --rohaki-color-earth-900: #643d23;
+  --rohaki-color-earth-950: #351f11;
+
+  /* === COLOR: SEMANTIC === */
+  --rohaki-color-primary: var(--rohaki-color-bamboo-700);
+  --rohaki-color-primary-hover: var(--rohaki-color-bamboo-800);
+  --rohaki-color-primary-light: var(--rohaki-color-bamboo-100);
+  --rohaki-color-primary-foreground: #ffffff;
+
+  --rohaki-color-secondary: var(--rohaki-color-earth-600);
+  --rohaki-color-secondary-hover: var(--rohaki-color-earth-700);
+  --rohaki-color-secondary-light: var(--rohaki-color-earth-100);
+  --rohaki-color-secondary-foreground: #ffffff;
+
+  --rohaki-color-accent: var(--rohaki-color-sage-500);
+  --rohaki-color-accent-hover: var(--rohaki-color-sage-600);
+  --rohaki-color-accent-light: var(--rohaki-color-sage-100);
+  --rohaki-color-accent-foreground: var(--rohaki-color-bamboo-950);
+
+  --rohaki-color-background: #ffffff;
+  --rohaki-color-background-secondary: var(--rohaki-color-bamboo-50);
+  --rohaki-color-background-tertiary: var(--rohaki-color-sage-50);
+  --rohaki-color-background-dark: var(--rohaki-color-bamboo-950);
+
+  --rohaki-color-text-primary: var(--rohaki-color-bamboo-950);
+  --rohaki-color-text-secondary: var(--rohaki-color-bamboo-700);
+  --rohaki-color-text-muted: var(--rohaki-color-bamboo-500);
+  --rohaki-color-text-inverse: #ffffff;
+
+  --rohaki-color-border: var(--rohaki-color-bamboo-200);
+  --rohaki-color-border-strong: var(--rohaki-color-bamboo-400);
+  --rohaki-color-border-focus: var(--rohaki-color-bamboo-500);
+
+  --rohaki-color-success: var(--rohaki-color-bamboo-600);
+  --rohaki-color-warning: var(--rohaki-color-earth-500);
+  --rohaki-color-error: #dc2626;
+  --rohaki-color-info: var(--rohaki-color-sage-500);
+
+  /* === GRADIENTS === */
+  --rohaki-gradient-brand-primary: linear-gradient(135deg, var(--rohaki-color-bamboo-700) 0%, var(--rohaki-color-bamboo-500) 100%);
+  --rohaki-gradient-brand-secondary: linear-gradient(135deg, var(--rohaki-color-earth-600) 0%, var(--rohaki-color-earth-400) 100%);
+  --rohaki-gradient-brand-accent: linear-gradient(135deg, var(--rohaki-color-sage-500) 0%, var(--rohaki-color-bamboo-500) 100%);
+  --rohaki-gradient-hero: linear-gradient(135deg, var(--rohaki-color-bamboo-950) 0%, var(--rohaki-color-bamboo-800) 50%, var(--rohaki-color-bamboo-600) 100%);
+  --rohaki-gradient-card: linear-gradient(145deg, var(--rohaki-color-bamboo-50) 0%, var(--rohaki-color-sage-50) 100%);
+  --rohaki-gradient-stats: linear-gradient(135deg, var(--rohaki-color-bamboo-900) 0%, var(--rohaki-color-bamboo-700) 100%);
+
+  /* === SPACING === */
+  --rohaki-space-0: 0;
+  --rohaki-space-1: 0.25rem;
+  --rohaki-space-2: 0.5rem;
+  --rohaki-space-3: 0.75rem;
+  --rohaki-space-4: 1rem;
+  --rohaki-space-5: 1.25rem;
+  --rohaki-space-6: 1.5rem;
+  --rohaki-space-8: 2rem;
+  --rohaki-space-10: 2.5rem;
+  --rohaki-space-12: 3rem;
+  --rohaki-space-16: 4rem;
+  --rohaki-space-20: 5rem;
+  --rohaki-space-24: 6rem;
+
+  /* === TYPOGRAPHY === */
+  --rohaki-font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --rohaki-font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --rohaki-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --rohaki-text-xs: 0.75rem;
+  --rohaki-text-sm: 0.875rem;
+  --rohaki-text-base: 1rem;
+  --rohaki-text-lg: 1.125rem;
+  --rohaki-text-xl: 1.25rem;
+  --rohaki-text-2xl: 1.5rem;
+  --rohaki-text-3xl: 1.875rem;
+  --rohaki-text-4xl: 2.25rem;
+  --rohaki-text-5xl: 3rem;
+  --rohaki-text-6xl: 3.75rem;
+  --rohaki-text-7xl: 4.5rem;
+
+  --rohaki-font-normal: 400;
+  --rohaki-font-medium: 500;
+  --rohaki-font-semibold: 600;
+  --rohaki-font-bold: 700;
+  --rohaki-font-extrabold: 800;
+
+  --rohaki-leading-tight: 1.1;
+  --rohaki-leading-snug: 1.375;
+  --rohaki-leading-normal: 1.5;
+  --rohaki-leading-relaxed: 1.625;
+  --rohaki-leading-loose: 2;
+
+  --rohaki-tracking-tight: -0.02em;
+  --rohaki-tracking-normal: 0;
+  --rohaki-tracking-wide: 0.02em;
+
+  /* === BORDER RADIUS === */
+  --rohaki-radius-none: 0;
+  --rohaki-radius-sm: 0.25rem;
+  --rohaki-radius: 0.5rem;
+  --rohaki-radius-md: 0.75rem;
+  --rohaki-radius-lg: 1rem;
+  --rohaki-radius-xl: 1.5rem;
+  --rohaki-radius-2xl: 2rem;
+  --rohaki-radius-full: 9999px;
+
+  /* === SHADOWS === */
+  --rohaki-shadow-none: none;
+  --rohaki-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --rohaki-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --rohaki-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --rohaki-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --rohaki-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --rohaki-shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --rohaki-shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+  --rohaki-shadow-brand: 0 4px 14px 0 rgb(22 163 74 / 0.25);
+  --rohaki-shadow-brand-lg: 0 10px 30px 0 rgb(22 163 74 / 0.3);
+
+  /* === ANIMATION === */
+  --rohaki-duration-fast: 150ms;
+  --rohaki-duration-normal: 200ms;
+  --rohaki-duration-slow: 300ms;
+  --rohaki-duration-slower: 500ms;
+
+  --rohaki-ease-linear: linear;
+  --rohaki-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --rohaki-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --rohaki-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --rohaki-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* === BREAKPOINTS (for reference, not CSS vars) === */
+  /* --rohaki-breakpoint-sm: 640px;
+  --rohaki-breakpoint-md: 768px;
+  --rohaki-breakpoint-lg: 1024px;
+  --rohaki-breakpoint-xl: 1280px;
+  --rohaki-breakpoint-2xl: 1536px; */
+
+  /* === Z-INDEX === */
+  --rohaki-z-hide: -1;
+  --rohaki-z-base: 0;
+  --rohaki-z-dropdown: 100;
+  --rohaki-z-sticky: 200;
+  --rohaki-z-fixed: 300;
+  --rohaki-z-modal-backdrop: 400;
+  --rohaki-z-modal: 500;
+  --rohaki-z-popover: 600;
+  --rohaki-z-tooltip: 700;
+  --rohaki-z-toast: 800;
+}
+
+/* === COMPONENT PATTERNS (utility classes) === */
+
+/* Card Base */
+.rohaki-card {
+  background: var(--rohaki-color-background);
+  border: 1px solid var(--rohaki-color-border);
+  border-radius: var(--rohaki-radius-xl);
+  padding: var(--rohaki-space-6);
+  box-shadow: var(--rohaki-shadow-md);
+  transition: all var(--rohaki-duration-normal) var(--rohaki-ease-out);
+}
+
+.rohaki-card:hover {
+  box-shadow: var(--rohaki-shadow-brand-lg);
+  transform: translateY(-4px);
+  border-color: var(--rohaki-color-border-strong);
+}
+
+/* Card Variants */
+.rohaki-card-elevated {
+  box-shadow: var(--rohaki-shadow-brand);
+}
+
+.rohaki-card-stats {
+  background: var(--rohaki-gradient-stats);
+  color: var(--rohaki-color-text-inverse);
+  border: none;
+}
+
+.rohaki-card-glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Button Base */
+.rohaki-btn {
+  font-family: var(--rohaki-font-sans);
+  font-weight: var(--rohaki-font-semibold);
+  border-radius: var(--rohaki-radius-lg);
+  padding: var(--rohaki-space-3) var(--rohaki-space-6);
+  font-size: var(--rohaki-text-sm);
+  line-height: var(--rohaki-leading-normal);
+  transition: all var(--rohaki-duration-fast) var(--rohaki-ease-out);
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rohaki-space-2);
+}
+
+/* Button Sizes */
+.rohaki-btn-sm { padding: var(--rohaki-space-2) var(--rohaki-space-4); font-size: var(--rohaki-text-xs); }
+.rohaki-btn-md { padding: var(--rohaki-space-3) var(--rohaki-space-6); font-size: var(--rohaki-text-sm); }
+.rohaki-btn-lg { padding: var(--rohaki-space-4) var(--rohaki-space-8); font-size: var(--rohaki-text-base); }
+.rohaki-btn-xl { padding: var(--rohaki-space-5) var(--rohaki-space-10); font-size: var(--rohaki-text-lg); }
+
+/* Button Variants */
+.rohaki-btn-primary {
+  background: var(--rohaki-gradient-brand-primary);
+  color: var(--rohaki-color-primary-foreground);
+  box-shadow: var(--rohaki-shadow-brand);
+}
+
+.rohaki-btn-primary:hover {
+  box-shadow: var(--rohaki-shadow-brand-lg);
+  transform: translateY(-2px);
+}
+
+.rohaki-btn-primary:active {
+  transform: translateY(0);
+  box-shadow: var(--rohaki-shadow-brand);
+}
+
+.rohaki-btn-secondary {
+  background: var(--rohaki-color-secondary);
+  color: var(--rohaki-color-secondary-foreground);
+}
+
+.rohaki-btn-secondary:hover {
+  background: var(--rohaki-color-secondary-hover);
+}
+
+.rohaki-btn-outline {
+  background: transparent;
+  color: var(--rohaki-color-primary);
+  border: 2px solid var(--rohaki-color-primary);
+}
+
+.rohaki-btn-outline:hover {
+  background: var(--rohaki-color-primary-light);
+  color: var(--rohaki-color-primary);
+}
+
+.rohaki-btn-ghost {
+  background: transparent;
+  color: var(--rohaki-color-text-secondary);
+}
+
+.rohaki-btn-ghost:hover {
+  background: var(--rohaki-color-background-secondary);
+  color: var(--rohaki-color-text-primary);
+}
+
+.rohaki-btn-stats {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--rohaki-color-text-inverse);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+}
+
+.rohaki-btn-stats:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Badge */
+.rohaki-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--rohaki-space-1) var(--rohaki-space-3);
+  font-size: var(--rohaki-text-xs);
+  font-weight: var(--rohaki-font-medium);
+  border-radius: var(--rohaki-radius-full);
+  gap: var(--rohaki-space-1);
+}
+
+.rohaki-badge-default {
+  background: var(--rohaki-color-primary-light);
+  color: var(--rohaki-color-primary);
+}
+
+.rohaki-badge-success {
+  background: color-mix(in srgb, var(--rohaki-color-success) 15%, transparent);
+  color: var(--rohaki-color-success);
+}
+
+.rohaki-badge-earth {
+  background: var(--rohaki-color-earth-100);
+  color: var(--rohaki-color-earth-700);
+}
+
+.rohaki-badge-stats {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--rohaki-color-text-inverse);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Grid Patterns */
+.rohaki-grid-cards {
+  display: grid;
+  gap: var(--rohaki-space-6);
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .rohaki-grid-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .rohaki-grid-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1280px) {
+  .rohaki-grid-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.rohaki-grid-stats {
+  display: grid;
+  gap: var(--rohaki-space-4);
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  .rohaki-grid-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .rohaki-grid-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.rohaki-grid-features {
+  display: grid;
+  gap: var(--rohaki-space-8);
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 1024px) {
+  .rohaki-grid-features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1280px) {
+  .rohaki-grid-features { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Section Patterns */
+.rohaki-section {
+  padding: var(--rohaki-space-16) var(--rohaki-space-4);
+}
+
+@media (min-width: 1024px) {
+  .rohaki-section { padding: var(--rohaki-space-20) var(--rohaki-space-6); }
+}
+
+@media (min-width: 1280px) {
+  .rohaki-section { padding: var(--rohaki-space-24) var(--rohaki-space-8); }
+}
+
+.rohaki-section-hero {
+  padding: var(--rohaki-space-20) var(--rohaki-space-4);
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  background: var(--rohaki-gradient-hero);
+}
+
+@media (min-width: 1024px) {
+  .rohaki-section-hero { padding: var(--rohaki-space-28) var(--rohaki-space-6); min-height: 100vh; }
+}
+
+.rohaki-section-stats {
+  padding: var(--rohaki-space-12) var(--rohaki-space-4);
+  background: var(--rohaki-gradient-stats);
+}
+
+@media (min-width: 1024px) {
+  .rohaki-section-stats { padding: var(--rohaki-space-16) var(--rohaki-space-6); }
+}
+
+.rohaki-section-card-grid {
+  background: var(--rohaki-color-background-secondary);
+}
+
+.rohaki-section-feature {
+  background: var(--rohaki-color-background);
+}
+
+.rohaki-section-cta {
+  background: var(--rohaki-gradient-brand-primary);
+  text-align: center;
+}
+
+/* Typography */
+.rohaki-heading {
+  font-family: var(--rohaki-font-display);
+  font-weight: var(--rohaki-font-bold);
+  line-height: var(--rohaki-leading-tight);
+  letter-spacing: var(--rohaki-tracking-tight);
+  color: var(--rohaki-color-text-primary);
+}
+
+.rohaki-h1 { font-size: var(--rohaki-text-5xl); }
+@media (min-width: 1024px) { .rohaki-h1 { font-size: var(--rohaki-text-6xl); } }
+
+.rohaki-h2 { font-size: var(--rohaki-text-4xl); }
+@media (min-width: 1024px) { .rohaki-h2 { font-size: var(--rohaki-text-5xl); } }
+
+.rohaki-h3 { font-size: var(--rohaki-text-3xl); }
+@media (min-width: 1024px) { .rohaki-h3 { font-size: var(--rohaki-text-4xl); } }
+
+.rohaki-h4 { font-size: var(--rohaki-text-2xl); }
+.rohaki-h5 { font-size: var(--rohaki-text-xl); }
+.rohaki-h6 { font-size: var(--rohaki-text-lg); }
+
+.rohaki-body {
+  font-family: var(--rohaki-font-sans);
+  font-weight: var(--rohaki-font-normal);
+  line-height: var(--rohaki-leading-relaxed);
+  color: var(--rohaki-color-text-secondary);
+}
+
+.rohaki-body-sm { font-size: var(--rohaki-text-sm); }
+.rohaki-body-base { font-size: var(--rohaki-text-base); }
+.rohaki-body-lg { font-size: var(--rohaki-text-lg); }
+
+.rohaki-stat-value {
+  font-family: var(--rohaki-font-display);
+  font-weight: var(--rohaki-font-extrabold);
+  line-height: var(--rohaki-leading-tight);
+  font-size: var(--rohaki-text-4xl);
+  color: var(--rohaki-color-text-inverse);
+}
+
+@media (min-width: 1024px) {
+  .rohaki-stat-value { font-size: var(--rohaki-text-5xl); }
+}
+
+.rohaki-stat-label {
+  font-family: var(--rohaki-font-sans);
+  font-weight: var(--rohaki-font-medium);
+  font-size: var(--rohaki-text-sm);
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: var(--rohaki-tracking-wide);
+}
