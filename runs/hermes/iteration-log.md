@@ -179,7 +179,59 @@
   - Per FRAMEWORK.md §1: must have evals
   - HITL gate: human reviews/approves PR after automated review
 - **Result:** ✓ skills/pr-review/ created with SKILL.md, fetch_pr.py, review.py, post_review.py, test_pr_review.py; ✓ evals pass; ✓ PR #19 open for review
-- **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit
+- **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit, BG-010 AGENTS/FRAMEWORK alignment
+
+---
+
+## Iteration 12 — 2026-07-26T14:00:00Z
+
+**Action:** Content CMS + D1 Worker — `faber-cms` skill (BG-023)
+
+- **Source:** Phase 2 feature request — "Content CMS + D1 Worker (#1). Two iterations: (a) schema + Worker + GET/POST + CF Access gate; (b) admin UI embedded in Astro. Content from D1 instead of static files. Two iterations."
+- **Skill name:** `faber-cms` (framework-scoped, lifecycle-adjacent)
+- **Spec reference:** FRAMEWORK.md §1 (skill contract), §2 (cross-cutting skills); skills/faber-design-system (UI tokens), skills/faber-splash (admin UI patterns); build-plan/build.06-rohaki-fixture.md (Rohaki as first CMS customer)
+- **Plan:**
+  1. **Create `skills/faber-cms/{SKILL.md, scripts/, evals/, assets/}`** per FRAMEWORK skill contract
+  2. **Draft SKILL.md** at `skills/faber-cms/SKILL.md` with:
+     - Description: "Generates a Cloudflare Worker-based CMS with D1 SQLite database for content management. Provides RESTful API (GET/POST) for content CRUD, Cloudflare Access authentication gate, and an embedded Astro admin UI. Content rendered from D1 instead of static files."
+     - Inputs: PROJECT_NAME, OUTPUT_DIR, CONTENT_TYPES (schema), DEPLOY_TARGETS, CF_ACCESS_POLICY
+     - Outputs: Cloudflare Worker (TypeScript), D1 schema/migrations, Astro admin UI, wrangler.toml, CI/CD
+     - Interface: JSON in/out for orchestrator compatibility
+  3. **Implement scripts/** (Iteration A - Worker + D1 + API):
+     - `generate_worker.py` — main entry (Typer CLI): --project-name, --output-dir, --content-types, --cf-access
+     - `generate_d1_schema.py` — generates D1 SQL schema + migrations from content types
+     - `generate_worker_code.py` — generates TypeScript Worker with GET/POST handlers, D1 bindings, CF Access middleware
+     - `generate_wrangler.py` — generates wrangler.toml with D1 binding, KV for sessions, CF Access config
+  4. **Implement scripts/** (Iteration B - Admin UI):
+     - `generate_admin_ui.py` — generates embedded Astro admin UI using faber-design-system tokens
+     - `generate_admin_routes.py` — generates Astro pages for content list/edit/create/delete
+     - `generate_admin_components.py` — generates reusable admin components (Table, Form, Modal, Toast)
+  5. **Assets/templates/**:
+     - `worker.ts.template` — Cloudflare Worker with REST API + CF Access
+     - `schema.sql.template` — D1 schema with content, collections, versions tables
+     - `wrangler.toml.template` — Worker config with D1 binding
+     - `admin/*.astro.template` — Admin UI pages (Dashboard, ContentList, ContentEditor, Settings)
+     - `admin/components/*.astro.template` — Reusable components
+  6. **Add evals/**:
+     - `test_worker.py` — generates Worker, validates TypeScript compiles, API routes present
+     - `test_d1_schema.py` — validates SQL schema has required tables, indexes, foreign keys
+     - `test_admin_ui.py` — validates admin UI generates correct Astro structure
+     - `test_determinism.py` — same input → identical output
+     - `test_cf_access.py` — validates CF Access middleware present
+  7. **Registry entry** in `prompts/_registry.md` (new skill entry)
+  8. **PR** targeting `dev` referencing `skill.faber-cms@1.0.0`
+- **Dependencies:** `faber-design-system` skill (merged), `faber-splash` skill (admin UI patterns), Cloudflare D1 + Workers + Access
+- **Constraints:**
+  - Per AGENTS.md §2.7: no autonomous skill creation → manual PR (skill-author not yet used for framework skills)
+  - Per FRAMEWORK.md §1: must have evals
+  - HITL gate: human reviews generated CMS before merge
+  - **Two iterations:** This PR covers Iteration A (Worker + D1 + API). Iteration B (Admin UI) is separate PR.
+  - **Deploy target discipline:** CMS Worker declares production + staging per FRAMEWORK.md §13
+- **Expected diff:** ~800-1000 lines across SKILL.md, scripts/, evals/, assets/ (Iteration A only)
+- **Branch:** hermes/faber-cms (this branch)
+- **Priority:** HIGH (BG-023)
+- **Related:** Enables BG-024 (intent wizard shares D1), Rohaki MVP content management, Faber self-hosting content
+- **Next:** BG-024 Intent Wizard (faber-intent-wizard skill)
 
 ---
 
