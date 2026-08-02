@@ -64,12 +64,13 @@ tags: [...]
 
 ## Index
 
-| id | intent | produces | depends_on |
-|---|---|---|---|
-| `framework.bootstrap` | Stand up the framework repo + skill library + orchestrator | repo scaffold, registry wired, `AGENTS.md` | — |
-| `skill.intent-collector` | Turn client conversation into deterministic spec + trajectory + scope baseline | `intent-collect/` skill | `framework.bootstrap` |
-| `skill.observe-feedback` | Close observability + post-deploy feedback gaps | `observe/`, `feedback/`, `trajectory-guard/`, `dashboard/` skills | `framework.bootstrap` |
-| `meta.skill-author` | Let the system author new skills via PR under HITL | `skill-author/` skill | `framework.bootstrap`, `skill.observe-feedback` |
+|| id | intent | produces | depends_on ||
+|---|---|---|---|---|---|
+|| `framework.bootstrap` | Stand up the framework repo + skill library + orchestrator | repo scaffold, registry wired, `AGENTS.md` | — ||
+|| `skill.intent-collector` | Turn client conversation into deterministic spec + trajectory + scope baseline | `intent-collect/` skill | `framework.bootstrap` ||
+|| `skill.observe-feedback` | Close observability + post-deploy feedback gaps | `observe/`, `feedback/`, `trajectory-guard/`, `dashboard/` skills | `framework.bootstrap` ||
+|| `meta.skill-author` | Let the system author new skills via PR under HITL | `skill-author/` skill | `framework.bootstrap`, `skill.observe-feedback` ||
+|| `skill.faber-cms@1.1.0` | Generate CMS with Worker API (D1) + Embedded Admin UI | CMS Worker project + Admin UI project | `framework.bootstrap` ||
 
 ## Conventions
 - One registry entry = one deliverable = (ideally) one PR.

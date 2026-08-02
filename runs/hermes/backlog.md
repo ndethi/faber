@@ -33,7 +33,7 @@
 |----|--------|------|----------|--------|
 | BG-021 | User Request (Phase 2) | **Design System Foundation (faber-design-system skill)** — Design tokens + Tailwind config + motion primitives (green gradients, card grids, stats section). Rohaki-themed defaults as Faber fixture. One iteration. | HIGH | **done** (evals passing, PR #68 merged) |
 | BG-022 | User Request (Phase 2) | **Faber Launch Splash (faber-splash skill)** — New repo \`faber-www\` or fresh branch. Built with #1's design system. Splash page: (a) what Faber is, (b) what shipped (rohaki-mvp + splash), (c) loop diagram + live PR/deploy receipts. CTA → Intent Wizard. One iteration. | HIGH | **done** (evals passing, PR #69 ready for review) |
-|| BG-023 | User Request (Phase 2) | **Content CMS + D1 Worker (faber-cms skill)** — Two iterations: (a) schema + Worker + GET/POST + CF Access gate; (b) admin UI embedded in Astro. Content from D1 instead of static files. Two iterations. | HIGH | **in_progress** |
+|| BG-023 | User Request (Phase 2) | **Content CMS + D1 Worker (faber-cms skill)** — Two iterations: (a) schema + Worker + GET/POST + CF Access gate; (b) admin UI embedded in Astro. Content from D1 instead of static files. Two iterations. | HIGH | **done** (Iteration A: PR #70 merged; Iteration B: this PR) |
 || BG-024 | User Request (Phase 2) | **Intent Wizard (faber-intent-wizard skill)** — Public `/intent` route, reuses intent-collect spec-emission logic, writes to D1 `intents` table, Telegram notifications, backlog draft gen. One iteration. | HIGH | **done** (evals passing) |
 
 ## Low Priority / Tracking

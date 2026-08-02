@@ -556,3 +556,50 @@
 - **Result:** ✓ SKILL.md created with complete spec; ✓ generate_wizard.py main entry point with Typer CLI; ✓ 7 script modules (generate_d1_schema, generate_intent_route, generate_telegram_handler, generate_backlog_draft, apply_design_system, setup_astro_project, generate_wizard); ✓ Reuses intent-collect logic (extract_facts, elicit_gaps, generate_spec, generate_trajectory, generate_scope_baseline); ✓ Generates complete Astro project with /intent multi-step wizard (7 steps + review), D1 schema for intents table, Telegram webhook handler, API endpoint; ✓ 30 evals pass (D1 schema, intent-collect integration, determinism, CLI interface, output validation); ✓ Design system fallback tokens when skill unavailable; ✓ Deterministic byte-for-byte output verified
 - **Diff:** ~2,500 lines across SKILL.md, scripts/, evals/
 - **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit, BG-010 AGENTS/FRAMEWORK alignment
+
+---
+
+## Iteration 7 — 2026-08-02T19:00:00Z
+
+**Action:** Content CMS + D1 Worker — `faber-cms` skill Iteration B (BG-023)
+
+- **Source:** Phase 2 feature request — "Content CMS + D1 Worker (faber-cms skill) — Two iterations: (a) schema + Worker + GET/POST + CF Access gate; (b) admin UI embedded in Astro. Content from D1 instead of static files."
+- **Skill name:** `faber-cms` (framework-scoped, lifecycle-adjacent) — Iteration B
+- **Spec reference:** FRAMEWORK.md §1 (skill contract), §2 (cross-cutting skills); skills/faber-design-system/ (UI tokens), skills/faber-splash/ (admin UI patterns); skills/faber-cms/ (Iteration A Worker + D1 + API)
+- **Plan:**
+  1. **Extend `skills/faber-cms/`** with admin UI generation (scripts + assets + evals for Iteration B)
+  2. **Add `generate_admin_ui.py`** — main entry (Typer CLI): --project-name, --output-dir, --worker-url, --fixture
+  3. **Implement scripts/** (Iteration B - Admin UI):
+     - `generate_admin_ui.py` — generates embedded Astro admin UI using faber-design-system tokens
+     - `generate_admin_routes.py` — generates Astro pages for Dashboard, ContentList, ContentEditor, Settings
+     - `generate_admin_components.py` — generates reusable admin components (Table, Form, Modal, Toast, Sidebar, Header)
+     - `generate_admin_api_client.py` — TypeScript client for Worker API (fetch wrappers, types)
+  4. **Assets/templates/**:
+     - `admin/*.astro.template` — Admin pages (Dashboard, ContentList, ContentEditor, Settings)
+     - `admin/components/*.astro.template` — Reusable components
+     - `admin/styles/admin.css.template` — Admin-specific styles using design tokens
+     - `admin/api-client.ts.template` — TypeScript API client
+  5. **Add evals/** for Iteration B:
+     - `test_admin_ui.py` — generates admin UI, validates Astro structure, components present
+     - `test_admin_routes.py` — validates admin pages generate correct routes
+     - `test_admin_components.py` — validates component structure
+     - `test_api_client.py` — validates TypeScript client generation
+     - `test_determinism.py` — same input → identical output
+  6. **Update SKILL.md** to reflect Iteration B completion
+  7. **Registry entry** in `prompts/_registry.md` (update existing skill entry)
+  8. **PR** targeting `dev` referencing `skill.faber-cms@1.1.0` (Iteration B)
+- **Dependencies:** `faber-design-system` skill (merged), `faber-cms` Iteration A (merged PR #70), `faber-splash` (admin UI patterns)
+- **Constraints:**
+  - Per AGENTS.md §2.7: no autonomous skill creation → manual PR
+  - Per FRAMEWORK.md §1: must have evals
+  - HITL gate: human reviews generated admin UI before merge
+  - **Deploy target discipline:** Admin UI declares production + staging per FRAMEWORK.md §13
+  - **Determinism:** Same inputs → byte-for-byte identical output
+  - **Integration:** Must work with Iteration A Worker API (same D1 schema, same endpoints)
+- **Expected diff:** ~800-1000 lines across scripts/, evals/, assets/ (Iteration B only)
+- **Branch:** hermes/faber-cms-admin-ui (this branch)
+- **Priority:** HIGH (BG-023 Iteration B)
+- **Related:** Completes BG-023; enables Rohaki MVP content management; demonstrates Faber self-hosting content
+- **Result:** ✓ Extended `skills/faber-cms/` with admin UI generation (scripts + evals); ✓ `generate_admin_ui.py` main entry with Typer CLI (--project-name, --output-dir, --worker-url, --fixture); ✓ 4 script modules (generate_admin_ui, generate_admin_routes, generate_admin_components, generate_admin_api_client); ✓ Generated complete Astro admin UI with Dashboard, Content List, Content Editor, Settings pages; ✓ Reusable components (Sidebar, Header, ContentTable, ContentForm, Modal, Toast); ✓ TypeScript API client with typed fetch wrappers; ✓ Design system tokens applied; ✓ 23 evals pass (18 Iteration A + 5 Iteration B); ✓ Deterministic byte-for-byte output verified; ✓ Registry entry updated to `skill.faber-cms@1.1.0`
+- **Diff:** ~1,200 lines across scripts/, evals/, assets/ (Iteration B) + SKILL.md updates
+- **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit, BG-010 AGENTS/FRAMEWORK alignment
