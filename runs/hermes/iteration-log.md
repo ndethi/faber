@@ -499,3 +499,60 @@
 - **Branch:** hermes/faber-splash (this branch)
 - **Priority:** HIGH (BG-022)
 - **Related:** Uses BG-021 design system; enables BG-024 (intent wizard CTA); proves framework self-hosting
+
+---
+
+## Iteration N — 2026-08-02T12:00:00Z
+
+**Action:** Intent Wizard — `faber-intent-wizard` skill (BG-024)
+
+- **Source:** Phase 2 feature request — "Intent Wizard (faber-intent-wizard skill) — Public `/intent` route, reuses intent-collect spec-emission logic, writes to D1 `intents` table, Telegram notifications, backlog draft gen. One iteration."
+- **Skill name:** `faber-intent-wizard` (framework-scoped, lifecycle-adjacent)
+- **Spec reference:** FRAMEWORK.md §1 (skill contract), §2 (cross-cutting skills); skills/intent-collect/ (spec-emission logic); skills/faber-cms/ (D1 schema patterns); AGENTS.md §2.12 (deploy target discipline); FRAMEWORK.md §13 (intent collection interfaces design)
+- **Plan:**
+  1. **Create `skills/faber-intent-wizard/{SKILL.md, scripts/, evals/, assets/}`** per FRAMEWORK skill contract
+  2. **Draft SKILL.md** at `skills/faber-intent-wizard/SKILL.md` with:
+     - Description: "Generates a public `/intent` Astro route that collects project intent via a multi-step wizard, reuses intent-collect's structured elicitation logic to emit spec.md/trajectory.md/scope-baseline.md, stores submissions in D1 `intents` table, sends Telegram notifications, and generates backlog draft items. Deployed as part of the Faber splash site (faber-www) or standalone."
+     - Inputs: PROJECT_NAME, OUTPUT_DIR, DEPLOY_TARGETS, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, INTENT_COLLECT_FIXTURE (optional), FIXTURE (default: faber-brand)
+     - Outputs: Complete Astro project at OUTPUT_DIR with /intent route, D1 schema for intents table, Telegram webhook handler, CI/CD for deploy
+     - Interface: JSON in/out for orchestrator compatibility
+  3. **Implement scripts/**:
+     - `generate_wizard.py` — main entry (Typer CLI): --project-name, --output-dir, --deploy-targets, --telegram-config
+     - `generate_intent_route.py` — generates Astro /intent page with multi-step form (goal, audience, non-goals, IA, content model, constraints, metrics)
+     - `generate_d1_schema.py` — generates D1 schema for `intents` table (id, client_context, production_context, spec_md, trajectory_md, scope_baseline_md, status, created_at, updated_at, telegram_notified)
+     - `generate_telegram_handler.py` — generates Telegram webhook endpoint for notifications
+     - `generate_backlog_draft.py` — generates backlog draft items from submitted intent
+     - `apply_design_system.py` — invokes faber-design-system --fixture to get tokens
+     - `setup_astro_project.py` — creates package.json, astro.config.mjs, wrangler.toml, CI workflows
+  4. **Assets/templates/**:
+     - `intent-page.astro.template` — multi-step wizard form with progressive disclosure
+     - `intent-success.astro.template` — confirmation page with scope-baseline preview
+     - `api/intent.ts.template` — API endpoint: POST /api/intent (stores to D1, emits artifacts, notifies Telegram)
+     - `api/telegram.ts.template` — Telegram webhook handler
+     - `d1-schema.sql.template` — intents table + indexes
+     - `wrangler.toml.template` — Worker config with D1 binding, KV for sessions
+     - `package.json.template`, `astro.config.mjs.template`
+  5. **Add evals/**:
+     - `test_wizard.py` — generates complete Astro project, asserts file structure, /intent route present, components present
+     - `test_d1_schema.py` — validates SQL schema has intents table with required columns, indexes
+     - `test_telegram_handler.py` — mocks Telegram API, verifies notification payload
+     - `test_intent_collect_integration.py` — verifies intent-collect logic reused correctly (extract → elicit → spec → trajectory → scope-baseline)
+     - `test_backlog_draft.py` — validates backlog draft generation from submitted intent
+     - `test_determinism.py` — same input → identical output
+  6. **Registry entry** in `prompts/_registry.md` (new skill entry)
+  7. **PR** targeting `dev` referencing `skill.faber-intent-wizard@1.0.0`
+- **Dependencies:** `faber-design-system` skill (merged), `faber-cms` skill (D1 patterns), `intent-collect` skill (spec-emission logic), `faber-splash` (deployment target), Telegram bot token for notifications
+- **Constraints:**
+  - Per AGENTS.md §2.7: no autonomous skill creation → manual PR (skill-author not yet used for framework skills)
+  - Per FRAMEWORK.md §1: must have evals
+  - HITL gate: human reviews generated wizard before merge
+  - **Deploy target discipline:** Wizard declares production + staging per FRAMEWORK.md §13
+  - **Determinism:** Same inputs → byte-for-byte identical output (no LLM in generation path)
+  - **Reuse:** Must reuse intent-collect's extract_facts, elicit_gaps, generate_spec, generate_trajectory, generate_scope_baseline functions — not reimplement
+- **Expected diff:** ~600-800 lines across SKILL.md, scripts/, evals/, assets/
+- **Branch:** hermes/faber-intent-wizard (this branch)
+- **Priority:** HIGH (BG-024)
+- **Related:** Enables public intent collection for Faber framework; integrates with faber-splash CTA; shares D1 with faber-cms
+- **Result:** ✓ SKILL.md created with complete spec; ✓ generate_wizard.py main entry point with Typer CLI; ✓ 7 script modules (generate_d1_schema, generate_intent_route, generate_telegram_handler, generate_backlog_draft, apply_design_system, setup_astro_project, generate_wizard); ✓ Reuses intent-collect logic (extract_facts, elicit_gaps, generate_spec, generate_trajectory, generate_scope_baseline); ✓ Generates complete Astro project with /intent multi-step wizard (7 steps + review), D1 schema for intents table, Telegram webhook handler, API endpoint; ✓ 30 evals pass (D1 schema, intent-collect integration, determinism, CLI interface, output validation); ✓ Design system fallback tokens when skill unavailable; ✓ Deterministic byte-for-byte output verified
+- **Diff:** ~2,500 lines across SKILL.md, scripts/, evals/
+- **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit, BG-010 AGENTS/FRAMEWORK alignment
