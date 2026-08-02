@@ -89,7 +89,7 @@ Every skill at `skills/<name>/` contains:
 | Category | Skills |
 |----------|--------|
 | Lifecycle | `intent-collect`, `scaffold`, `build`, `evaluate`, `deploy`, `publish`, `observe`, `feedback` |
-| Cross-cutting | `trajectory-guard`, `model-route`, `scope-ledger`, `dashboard` |
+| Cross-cutting | `trajectory-guard`, `model-route`, `scope-ledger`, `dashboard`, `pm-github` |
 | Meta | `skill-author` |
 
 An **orchestrator** (`orchestrator/`) sequences lifecycle skills per a run plan; cross-cutting skills wrap every run.
