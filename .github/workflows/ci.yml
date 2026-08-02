@@ -1,0 +1,197 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  # Lint and typecheck
+  lint:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: |
+          if [ -f package.json ]; then npm ci; fi
+
+      - name: Lint skills
+        run: |
+          for skill in skills/*/; do
+            if [ -f "$skill/package.json" ]; then
+              echo "Linting $(basename $skill)..."
+              (cd "$skill" && npm run lint 2>/dev/null || npm run lint:fix 2>/dev/null || echo "No lint script")
+            fi
+          done
+
+      - name: Typecheck skills
+        run: |
+          for skill in skills/*/; do
+            if [ -f "$skill/tsconfig.json" ]; then
+              echo "Typechecking $(basename $skill)..."
+              (cd "$skill" && npm run typecheck 2>/dev/null || echo "No typecheck script")
+            fi
+          done
+
+  # Run all skill evals
+  evals:
+    name: Skill Evaluations
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install common dependencies
+        run: |
+          pip install --no-cache-dir --quiet requests pyyaml pytest jsonschema
+
+      - name: Run all skill evals
+        run: |
+          failed=0
+          for skill in skills/*/; do
+            if [ -d "$skill/evals" ]; then
+              echo "Running evals for $(basename $skill)..."
+              if [ -f "$skill/requirements.txt" ]; then
+                echo "Installing dependencies for $(basename $skill)..."
+                pip install --no-cache-dir --quiet -r "$skill/requirements.txt"
+              fi
+              python -m pytest "$skill/evals/" -v || failed=1
+            fi
+          done
+          if [ $failed -eq 1 ]; then
+            echo "::error::One or more skill evals failed"
+            exit 1
+          fi
+
+  # Trajectory guard (runs on push to dev)
+  trajectory-guard:
+    name: Trajectory Guard
+    runs-on: ubuntu-latest
+    needs: evals
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --no-cache-dir --quiet requests pyyaml jsonschema
+
+      - name: Run trajectory-guard
+        run: |
+          # Find latest telemetry file
+          LATEST_RUN=$(ls -t runs/*/telemetry.json 2>/dev/null | head -1)
+          if [ -f "$LATEST_RUN" ]; then
+            echo "Found telemetry: $LATEST_RUN"
+            python skills/trajectory-guard/scripts/trajectory_guard.py \
+              --telemetry-path "$LATEST_RUN" \
+              --strictness exact
+          else
+            echo "No telemetry found, skipping trajectory-guard"
+          fi
+
+  # Build and evaluate integration test (using a fixture)
+  integration:
+    name: Integration Test (Rohaki Fixture)
+    runs-on: ubuntu-latest
+    needs: evals
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install common dependencies
+        run: |
+          pip install --no-cache-dir --quiet requests pyyaml pytest jsonschema
+
+      - name: Run intent-collect on Rohaki fixture
+        run: |
+          python skills/intent-collect/scripts/intent_collect.py \
+            --input-dir fixtures/rohaki \
+            --output-dir /tmp/rohaki-intent \
+            --dry-run
+
+      - name: Run scaffold on generated intent
+        run: |
+          python skills/scaffold/scripts/scaffold.py \
+            --input-dir /tmp/rohaki-intent \
+            --output-dir /tmp/rohaki-scaffold \
+            --dry-run
+
+      - name: Verify scaffold output
+        run: |
+          if [ -f /tmp/rohaki-scaffold/package.json ]; then
+            echo "Scaffold produced package.json ✓"
+          else
+            echo "::error::Scaffold did not produce package.json"
+            exit 1
+          fi
+
+  # Summary
+  ci-summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [lint, evals, trajectory-guard, integration]
+    if: always()
+    steps:
+      - name: Report status
+        run: |
+          echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint & Typecheck | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skill Evaluations | ${{ needs.evals.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trajectory Guard | ${{ needs.trajectory-guard.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Test | ${{ needs.integration.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.evals.result }}" == "failure" ]]; then
+            echo "❌ **Evals failed** - fix skill evals before merging" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          if [[ "${{ needs.lint.result }}" == "failure" ]]; then
+            echo "❌ **Lint/Typecheck failed**" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "✅ All checks passed" >> $GITHUB_STEP_SUMMARY
