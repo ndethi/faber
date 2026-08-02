@@ -128,19 +128,19 @@ def generate_spec(client_context: str, facts: Dict[str, str], gaps: List[str]) -
 """
     
     # Generate at least 2 IDed acceptance criteria based on context
-    spec += f"- SPEC-01: The system shall support the primary goal: {goal}\\n"
-    spec += f"- SPEC-02: The system shall serve the target audience: {audience}\\n"
+    spec += f"- SPEC-01: The system shall support the primary goal: {goal}\n"
+    spec += f"- SPEC-02: The system shall serve the target audience: {audience}\n"
     
     # Add more specific criteria if we detect domains
     if "blog" in client_context.lower() or "cms" in client_context.lower():
-        spec += "- SPEC-03: Content shall be editable via admin interface\\n"
-        spec += "- SPEC-04: Content shall support versioning\\n"
+        spec += "- SPEC-03: Content shall be editable via admin interface\n"
+        spec += "- SPEC-04: Content shall support versioning\n"
     elif "ecommerce" in client_context.lower() or "shop" in client_context.lower():
-        spec += "- SPEC-03: Product catalog shall support search and filtering\\n"
-        spec += "- SPEC-04: Checkout process shall be PCI compliant\\n"
+        spec += "- SPEC-03: Product catalog shall support search and filtering\n"
+        spec += "- SPEC-04: Checkout process shall be PCI compliant\n"
     else:
-        spec += "- SPEC-03: System shall be responsive and accessible\\n"
-        spec += "- SPEC-04: System shall follow security best practices\\n"
+        spec += "- SPEC-03: System shall be responsive and accessible\n"
+        spec += "- SPEC-04: System shall follow security best practices\n"
     
     # Surface gaps as TODO items (per non-fabrication rule)
     if gaps:
