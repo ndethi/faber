@@ -1,0 +1,285 @@
+# Faber CMS Default Configuration
+# Used by generate_worker.py and generate_admin.py
+
+# Content type definitions matching Rohaki MVP
+contentTypes:
+  - name: "page"
+    label: "Pages"
+    description: "Static pages (Home, About, Contact, Solutions, Impact)"
+    fields:
+      - name: "title"
+        type: "string"
+        required: true
+        label: "Title"
+      - name: "description"
+        type: "string"
+        required: true
+        label: "Description"
+      - name: "heroImage"
+        type: "string"
+        required: false
+        format: "url"
+        label: "Hero Image"
+      - name: "ctaText"
+        type: "string"
+        required: false
+        label: "CTA Text"
+      - name: "ctaLink"
+        type: "string"
+        required: false
+        format: "url"
+        label: "CTA Link"
+      - name: "order"
+        type: "number"
+        required: false
+        default: 0
+        label: "Order"
+    uiConfig:
+      title:
+        widget: "text"
+        placeholder: "Page title"
+      description:
+        widget: "textarea"
+        placeholder: "Meta description for SEO"
+      heroImage:
+        widget: "image"
+        preview: true
+      ctaLink:
+        widget: "url"
+        validation: "internal"
+      order:
+        widget: "number"
+        min: 0
+
+  - name: "post"
+    label: "Blog Posts"
+    description: "Insights and news articles"
+    fields:
+      - name: "title"
+        type: "string"
+        required: true
+        label: "Title"
+      - name: "description"
+        type: "string"
+        required: true
+        label: "Description"
+      - name: "pubDate"
+        type: "string"
+        required: true
+        format: "date-time"
+        label: "Publication Date"
+      - name: "updatedDate"
+        type: "string"
+        required: false
+        format: "date-time"
+        label: "Last Updated"
+      - name: "heroImage"
+        type: "string"
+        required: false
+        format: "url"
+        label: "Hero Image"
+      - name: "tags"
+        type: "array"
+        required: false
+        items:
+          type: "string"
+        label: "Tags"
+      - name: "author"
+        type: "string"
+        required: false
+        default: "Rohaki Team"
+        label: "Author"
+      - name: "body"
+        type: "string"
+        required: true
+        label: "Content"
+    uiConfig:
+      title:
+        widget: "text"
+      description:
+        widget: "textarea"
+      pubDate:
+        widget: "datetime"
+      updatedDate:
+        widget: "datetime"
+      heroImage:
+        widget: "image"
+        preview: true
+      tags:
+        widget: "tags"
+      author:
+        widget: "text"
+      body:
+        widget: "markdown"
+        preview: true
+
+  - name: "solution"
+    label: "Solutions"
+    description: "Product solution modules (Measure, Report, Trace, Trade)"
+    fields:
+      - name: "title"
+        type: "string"
+        required: true
+        label: "Title"
+      - name: "tagline"
+        type: "string"
+        required: true
+        label: "Tagline"
+      - name: "description"
+        type: "string"
+        required: true
+        label: "Description"
+      - name: "features"
+        type: "array"
+        required: false
+        items:
+          type: "string"
+        label: "Features"
+      - name: "icon"
+        type: "string"
+        required: false
+        label: "Icon (emoji)"
+      - name: "ctaText"
+        type: "string"
+        required: false
+        label: "CTA Text"
+      - name: "ctaLink"
+        type: "string"
+        required: false
+        format: "url"
+        label: "CTA Link"
+      - name: "order"
+        type: "number"
+        required: false
+        default: 0
+        label: "Order"
+    uiConfig:
+      title:
+        widget: "text"
+      tagline:
+        widget: "text"
+      description:
+        widget: "textarea"
+      features:
+        widget: "array"
+        itemWidget: "text"
+      icon:
+        widget: "text"
+        placeholder: "📊"
+      ctaLink:
+        widget: "url"
+      order:
+        widget: "number"
+        min: 0
+
+  - name: "impact_metric"
+    label: "Impact Metrics"
+    description: "Verified ESG impact metrics"
+    fields:
+      - name: "id"
+        type: "string"
+        required: true
+        label: "Metric ID"
+      - name: "label"
+        type: "string"
+        required: true
+        label: "Label"
+      - name: "value"
+        type: "string"
+        required: true
+        label: "Value"
+      - name: "unit"
+        type: "string"
+        required: false
+        label: "Unit"
+      - name: "category"
+        type: "string"
+        required: true
+        enum: ["environmental", "social", "governance", "economic"]
+        label: "Category"
+      - name: "trend"
+        type: "string"
+        required: false
+        enum: ["up", "down", "stable"]
+        label: "Trend"
+      - name: "year"
+        type: "number"
+        required: true
+        label: "Year"
+      - name: "source"
+        type: "string"
+        required: false
+        label: "Source"
+    uiConfig:
+      id:
+        widget: "text"
+        placeholder: "e.g., co2_sequestered_2024"
+      label:
+        widget: "text"
+      value:
+        widget: "text"
+      unit:
+        widget: "text"
+        placeholder: "tonnes CO₂"
+      category:
+        widget: "select"
+        options:
+          - value: "environmental"
+            label: "Environmental"
+          - value: "social"
+            label: "Social"
+          - value: "governance"
+            label: "Governance"
+          - value: "economic"
+            label: "Economic"
+      trend:
+        widget: "select"
+        options:
+          - value: "up"
+            label: "Up ↗"
+          - value: "down"
+            label: "Down ↘"
+          - value: "stable"
+            label: "Stable →"
+      year:
+        widget: "number"
+        min: 2020
+        max: 2030
+      source:
+        widget: "text"
+        placeholder: "Third-party verifier"
+
+# Cloudflare Access configuration
+cfAccess:
+  teamDomain: "<your-team>.cloudflareaccess.com"
+  aud: "cms.yourdomain.com"
+  publicKey: "<your-cf-access-public-key>"
+
+# Preview configuration
+preview:
+  secret: "<strong-random-secret-32-chars-min>"
+  baseUrl: "https://yourdomain.com"
+  ttlSeconds: 3600
+
+# GitHub sync (optional)
+github:
+  owner: "ndethi"
+  repo: "rohaki-mvp"
+  branch: "main"
+
+# Media settings
+media:
+  maxFileSize: 52428800  # 50MB
+  allowedMimeTypes:
+    - "image/*"
+    - "video/*"
+    - "audio/*"
+    - "application/pdf"
+  presignedUrlTtl: 300
+
+# Worker settings
+worker:
+  name: "faber-cms"
+  compatibilityDate: "2024-01-01"
+  compatibilityFlags:
+    - "nodejs_compat"

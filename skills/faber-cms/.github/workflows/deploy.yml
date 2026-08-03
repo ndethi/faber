@@ -1,0 +1,257 @@
+name: Faber CMS CI/CD
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: skills/faber-cms/scripts/worker/package-lock.json
+
+      - name: Install worker dependencies
+        run: npm ci
+        working-directory: ./skills/faber-cms/scripts/worker
+
+      - name: Run worker linter
+        run: npm run lint
+        working-directory: ./skills/faber-cms/scripts/worker
+
+      - name: Run worker typecheck
+        run: npm run typecheck
+        working-directory: ./skills/faber-cms/scripts/worker
+
+      - name: Setup admin Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: skills/faber-cms/scripts/admin/package-lock.json
+
+      - name: Install admin dependencies
+        run: npm ci
+        working-directory: ./skills/faber-cms/scripts/admin
+
+      - name: Run admin linter
+        run: npm run lint
+        working-directory: ./skills/faber-cms/scripts/admin
+
+      - name: Run admin typecheck
+        run: npm run typecheck
+        working-directory: ./skills/faber-cms/scripts/admin
+
+  test-worker:
+    name: Test Worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: skills/faber-cms/scripts/worker/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./skills/faber-cms/scripts/worker
+
+      - name: Run worker tests
+        run: npm test
+        working-directory: ./skills/faber-cms/scripts/worker
+
+  test-admin:
+    name: Test Admin (E2E)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: skills/faber-cms/scripts/admin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./skills/faber-cms/scripts/admin
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+        working-directory: ./skills/faber-cms/scripts/admin
+
+      - name: Build admin
+        run: npm run build
+        working-directory: ./skills/faber-cms/scripts/admin
+
+      - name: Run admin tests
+        run: npm test
+        working-directory: ./skills/faber-cms/scripts/admin
+
+  test-skill:
+    name: Test Skill Generation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install skill test dependencies
+        run: pip install pyyaml pytest
+
+      - name: Run skill evals
+        run: python -m pytest skills/faber-cms/evals/ -v
+
+  deploy-preview:
+    name: Deploy Preview
+    needs: [lint-and-typecheck, test-worker, test-admin, test-skill]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install worker dependencies
+        run: npm ci
+        working-directory: ./skills/faber-cms/scripts/worker
+
+      - name: Build worker
+        run: npm run build
+        working-directory: ./skills/faber-cms/scripts/worker
+
+      - name: Deploy to Cloudflare Pages Preview
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: faber-cms-preview
+          directory: ./skills/faber-cms/scripts/worker/dist
+          branch: preview/${{ github.head_ref }}
+
+  deploy-staging:
+    name: Deploy Staging
+    needs: [lint-and-typecheck, test-worker, test-admin, test-skill]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install worker dependencies
+        run: npm ci
+        working-directory: ./skills/faber-cms/scripts/worker
+
+      - name: Build worker
+        run: npm run build
+        working-directory: ./skills/faber-cms/scripts/worker
+
+      - name: Deploy to Cloudflare Pages Staging
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: faber-cms-staging
+          directory: ./skills/faber-cms/scripts/worker/dist
+          branch: dev
+
+      - name: Install admin dependencies
+        run: npm ci
+        working-directory: ./skills/faber-cms/scripts/admin
+
+      - name: Build admin
+        run: npm run build
+        working-directory: ./skills/faber-cms/scripts/admin
+
+      - name: Deploy admin to Cloudflare Pages Staging
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: faber-cms-admin-staging
+          directory: ./skills/faber-cms/scripts/admin/dist
+          branch: dev
+
+  deploy-production:
+    name: Deploy Production
+    needs: [lint-and-typecheck, test-worker, test-admin, test-skill]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install worker dependencies
+        run: npm ci
+        working-directory: ./skills/faber-cms/scripts/worker
+
+      - name: Build worker
+        run: npm run build
+        working-directory: ./skills/faber-cms/scripts/worker
+
+      - name: Deploy to Cloudflare Pages Production
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: faber-cms
+          directory: ./skills/faber-cms/scripts/worker/dist
+          branch: main
+
+      - name: Install admin dependencies
+        run: npm ci
+        working-directory: ./skills/faber-cms/scripts/admin
+
+      - name: Build admin
+        run: npm run build
+        working-directory: ./skills/faber-cms/scripts/admin
+
+      - name: Deploy admin to Cloudflare Pages Production
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: faber-cms-admin
+          directory: ./skills/faber-cms/scripts/admin/dist
+          branch: main

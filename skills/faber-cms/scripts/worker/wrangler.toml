@@ -1,0 +1,63 @@
+name = "faber-cms"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "faber-cms-content"
+database_id = "<your-d1-database-id>"
+preview_database_id = "<your-preview-d1-database-id>"
+
+# R2 Bucket for media
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "faber-cms-media"
+preview_bucket_name = "faber-cms-media-preview"
+
+# KV Namespace for sessions/cache
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "<your-kv-namespace-id>"
+preview_id = "<your-preview-kv-namespace-id>"
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
+CF_ACCESS_TEAM_DOMAIN = "<your-team>.cloudflareaccess.com"
+CF_ACCESS_AUD = "cms.yourdomain.com"
+CF_ACCESS_PUBLIC_KEY = "<your-cf-access-public-key>"
+PREVIEW_SECRET = "<strong-random-secret-32-chars-min>"
+PREVIEW_BASE = "https://yourdomain.com"
+
+# GitHub sync (optional)
+GITHUB_TOKEN = "<github-personal-access-token>"
+GITHUB_OWNER = "ndethi"
+GITHUB_REPO = "rohaki-mvp"
+
+[triggers]
+crons = ["0 * * * *"]  # Hourly cleanup job
+
+[build]
+command = "npm run build"
+watch_dir = "src"
+
+[dev]
+port = 8787
+ip = "127.0.0.1"
+
+# Preview environment
+[env.preview]
+name = "faber-cms-preview"
+vars = { ENVIRONMENT = "preview" }
+
+# Staging environment
+[env.staging]
+name = "faber-cms-staging"
+vars = { ENVIRONMENT = "staging" }
+
+# Production environment
+[env.production]
+name = "faber-cms"
+vars = { ENVIRONMENT = "production" }
