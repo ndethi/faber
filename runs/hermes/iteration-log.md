@@ -603,3 +603,14 @@
 - **Result:** ✓ Extended `skills/faber-cms/` with admin UI generation (scripts + evals); ✓ `generate_admin_ui.py` main entry with Typer CLI (--project-name, --output-dir, --worker-url, --fixture); ✓ 4 script modules (generate_admin_ui, generate_admin_routes, generate_admin_components, generate_admin_api_client); ✓ Generated complete Astro admin UI with Dashboard, Content List, Content Editor, Settings pages; ✓ Reusable components (Sidebar, Header, ContentTable, ContentForm, Modal, Toast); ✓ TypeScript API client with typed fetch wrappers; ✓ Design system tokens applied; ✓ 23 evals pass (18 Iteration A + 5 Iteration B); ✓ Deterministic byte-for-byte output verified; ✓ Registry entry updated to `skill.faber-cms@1.1.0`
 - **Diff:** ~1,200 lines across scripts/, evals/, assets/ (Iteration B) + SKILL.md updates
 - **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit, BG-010 AGENTS/FRAMEWORK alignment
+
+## Iteration 8 — 2026-11-03T00:00:00Z
+
+**Item:** Fix skill-author dedup + evaluate eval flake
+
+- **Plan:** (1) `search_existing_skills` compares only name/description/tags, ignores common words, needs 2+ shared words or a name match; replace the raised-limit assertion with hermetic tests. (2) `evaluate` eval stubs `npm`/`npx` so it needs no network, and asserts honest pass/fail reports in a temp `--output-dir`.
+- **Spec refs:** FRAMEWORK.md §7 (dedup hard rule), AGENTS.md §2.8, §2.9
+- **Expected diff:** ~120 lines across `skills/skill-author/` and `skills/evaluate/evals/`
+- **Branch:** hermes/fix-dedup-and-evaluate-evals
+- **Out of scope:** CI lint failure; `evaluate_acceptance_criteria` marking criteria "covered" unconditionally; removing `my-skill`, `quantum-sim`, `test-dedup`
+- **Result:** ✓ `skill-author` evals 14/14 and `evaluate` evals 10/10 pass; `quantum-consensus` dedup now returns 1 match (`quantum-sim`) instead of 22; `evaluate` evals run offline in under a second and write reports to a temp dir
