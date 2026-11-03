@@ -603,3 +603,11 @@
 - **Result:** ✓ Extended `skills/faber-cms/` with admin UI generation (scripts + evals); ✓ `generate_admin_ui.py` main entry with Typer CLI (--project-name, --output-dir, --worker-url, --fixture); ✓ 4 script modules (generate_admin_ui, generate_admin_routes, generate_admin_components, generate_admin_api_client); ✓ Generated complete Astro admin UI with Dashboard, Content List, Content Editor, Settings pages; ✓ Reusable components (Sidebar, Header, ContentTable, ContentForm, Modal, Toast); ✓ TypeScript API client with typed fetch wrappers; ✓ Design system tokens applied; ✓ 23 evals pass (18 Iteration A + 5 Iteration B); ✓ Deterministic byte-for-byte output verified; ✓ Registry entry updated to `skill.faber-cms@1.1.0`
 - **Diff:** ~1,200 lines across scripts/, evals/, assets/ (Iteration B) + SKILL.md updates
 - **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit, BG-010 AGENTS/FRAMEWORK alignment
+
+## 2026-11-03 — Fix CI pipeline failing at Node setup
+
+- **Spec:** AGENTS.md §11.1 (CI gates), `.github/workflows/ci.yml` (BG-007)
+- **Diagnosis:** `Lint & Typecheck` fails in `Set up Node.js`: `cache: 'npm'` needs a lockfile and the repo has none, so every downstream job (evals, integration, trajectory-guard) is skipped.
+- **Plan:** Remove `cache: 'npm'` from the `lint` and `integration` jobs (same defect in both); no checks removed or relaxed. Push and confirm `Skill Evaluations` runs; report any eval failures rather than masking them.
+- **Expected diff:** ~2 lines in ci.yml plus this entry.
+- **Branch:** hermes/fix-ci-npm-cache
