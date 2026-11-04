@@ -19,7 +19,7 @@ import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 # Skill contract template
@@ -258,15 +258,45 @@ if __name__ == "__main__":
 '''
 
 
-def search_existing_skills(query: str) -> List[Dict[str, Any]]:
+# Words too common across skills to indicate a duplicate
+DEDUP_STOPWORDS = frozenset({
+    "a", "an", "and", "are", "as", "at", "be", "by", "can", "for", "from", "in",
+    "into", "is", "it", "of", "on", "or", "per", "that", "the", "this", "to",
+    "via", "when", "with",
+    "agent", "agents", "description", "eval", "evals", "faber", "framework",
+    "name", "skill", "skills", "tags", "test", "tests",
+})
+
+# Two shared words at 0.5 each
+MIN_DEDUP_SCORE = 1.0
+
+
+def dedup_tokens(text: str) -> Set[str]:
+    """Split text into lowercase words, dropping DEDUP_STOPWORDS."""
+    return set(re.findall(r"[a-z0-9]+", text.lower())) - DEDUP_STOPWORDS
+
+
+def skill_identity_text(content: str) -> str:
+    """Return a SKILL.md's name, description and tags (body text is shared boilerplate)."""
+    frontmatter = re.match(r"---\n(.*?)\n---", content, re.DOTALL)
+    if not frontmatter:
+        return content
+    return re.sub(r"(?m)^(version|author|license):.*$", "", frontmatter.group(1))
+
+
+def search_existing_skills(
+    query: str,
+    name: Optional[str] = None,
+    skills_dir: Path = Path("skills"),
+) -> List[Dict[str, Any]]:
     """Search existing skills for dedup. Returns list of matches."""
-    skills_dir = Path("skills")
     if not skills_dir.exists():
         return []
 
     matches = []
     query_lower = query.lower()
-    query_words = set(query_lower.split())
+    query_words = dedup_tokens(query)
+    name_tokens = dedup_tokens(name) if name else set()
 
     for skill_dir in skills_dir.iterdir():
         if not skill_dir.is_dir():
@@ -279,11 +309,15 @@ def search_existing_skills(query: str) -> List[Dict[str, Any]]:
         skill_name = skill_dir.name
 
         # Simple keyword overlap scoring
-        skill_words = set(content.split())
+        skill_words = dedup_tokens(skill_identity_text(content))
         overlap = len(query_words & skill_words)
 
-        # Check name similarity
-        name_similarity = 1.0 if query_lower in skill_name.lower() else 0.0
+        # Check name similarity: one name's words contain the other's
+        skill_name_tokens = dedup_tokens(skill_name)
+        name_match = bool(name_tokens and skill_name_tokens) and (
+            name_tokens <= skill_name_tokens or skill_name_tokens <= name_tokens
+        )
+        name_similarity = 1.0 if name_match else 0.0
 
         # Check tag overlap
         tags = re.findall(r"tags:\s*\[(.*?)\]", content)
@@ -295,12 +329,12 @@ def search_existing_skills(query: str) -> List[Dict[str, Any]]:
 
         score = overlap * 0.5 + name_similarity * 0.3 + tag_overlap * 0.2
 
-        if score > 0.1:  # Threshold for relevance
+        if score >= MIN_DEDUP_SCORE or name_match:
             matches.append({
                 "skill": skill_name,
                 "score": round(score, 3),
                 "overlap_words": overlap,
-                "name_match": name_similarity > 0,
+                "name_match": name_match,
                 "tag_overlap": tag_overlap,
             })
 
@@ -320,7 +354,7 @@ def format_dedup_results(matches: List[Dict[str, Any]]) -> str:
     lines.append("")
     lines.append("**Recommendation**: " + (
         "High similarity to existing skill(s) — consider extending instead of creating new."
-        if matches[0]["score"] > 0.5
+        if matches[0]["score"] > 0.5 or matches[0]["name_match"]
         else "Low similarity — new skill creation appropriate."
     ))
     return "\n".join(lines)
@@ -343,7 +377,7 @@ def draft_skill(
 
     # Dedup search
     dedup_query = f"{name} {description} {context}"
-    matches = search_existing_skills(dedup_query)
+    matches = search_existing_skills(dedup_query, name=name)
 
     # Generate skill components
     name_title = name.replace("-", " ").title()

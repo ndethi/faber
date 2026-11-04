@@ -182,35 +182,65 @@ def test_determinism_dry_run() -> None:
     print("✓ Determinism test passed - identical dry-run outputs for identical inputs")
 
 
+def run_with_stubbed_tools(tmpdir: str, npm_exit: int, npx_exit: int) -> tuple:
+    """Run evaluate.py with fake npm/npx on PATH so no network or install is needed."""
+    bin_dir = Path(tmpdir) / "bin"
+    bin_dir.mkdir()
+    for tool, exit_code in [("npm", npm_exit), ("npx", npx_exit)]:
+        stub = bin_dir / tool
+        stub.write_text(f"#!/bin/sh\necho 'stub {tool} failure' >&2\nexit {exit_code}\n")
+        stub.chmod(0o755)
+
+    project_dir = Path(tmpdir) / "project"
+    project_dir.mkdir()
+    (project_dir / "package.json").write_text(json.dumps({"name": "test"}))
+    output_dir = Path(tmpdir) / "reports"
+
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "--input-dir", str(FIXTURES_DIR),
+         "--project-dir", str(project_dir), "--output-dir", str(output_dir)],
+        capture_output=True, text=True, timeout=30,
+        env={**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"},
+    )
+    return result, output_dir
+
+
 def test_todo_not_fabrication() -> None:
-    """Test that reports don't fabricate results."""
+    """Test that failing checks are reported as failures, never as success."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        project_dir = Path(tmpdir) / "project"
-        project_dir.mkdir()
-        (project_dir / "package.json").write_text(json.dumps({
-            "name": "test",
-            "scripts": {"test": "vitest run", "lint": "eslint src"}
-        }))
-        
-        result = subprocess.run(
-            [sys.executable, str(SCRIPT), "--input-dir", str(FIXTURES_DIR), "--project-dir", str(project_dir)],
-            capture_output=True, text=True, timeout=180
-        )
-        
-        # Should complete (may fail due to missing deps but should not crash)
-        assert result.returncode in [0, 1]
-        
-        if result.returncode == 0:
-            out = json.loads(result.stdout.strip())
-            for artifact in out["artifacts"]:
-                if artifact.endswith(".md"):
-                    content = Path(artifact).read_text()
-                    # Should not claim false success
-                    if "FAIL" in content or "❌" in content:
-                        # That's honest - it failed
-                        pass
-    
+        result, output_dir = run_with_stubbed_tools(tmpdir, npm_exit=1, npx_exit=0)
+
+        assert result.returncode == 1, "Failing checks must exit non-zero"
+
+        report = json.loads((output_dir / "evaluation-report.json").read_text())
+        assert report["status"] == "failed"
+        assert report["overall_success"] is False
+        results = {c["name"]: c["success"] for c in report["checks"]}
+        assert results["npm test"] is False
+        assert results["npm run lint"] is False
+        assert results["npx astro check"] is True
+
+        summary = (output_dir / "EVALUATION_SUMMARY.md").read_text()
+        assert "❌ FAIL" in summary
+        assert "✅ PASS" not in summary
+        assert "stub npm failure" in summary, "Failure output must reach the report"
+
     print("✓ TODO/not-fabrication test passed - honest failure reporting")
+
+
+def test_passing_checks_report_success() -> None:
+    """Test that a project passing every check is reported as a success."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        result, output_dir = run_with_stubbed_tools(tmpdir, npm_exit=0, npx_exit=0)
+
+        assert result.returncode == 0, f"Passing checks must exit zero: {result.stdout}"
+
+        report = json.loads((output_dir / "evaluation-report.json").read_text())
+        assert report["status"] == "success"
+        assert report["overall_success"] is True
+        assert "✅ PASS" in (output_dir / "EVALUATION_SUMMARY.md").read_text()
+
+    print("✓ Passing checks are reported as success")
 
 
 def test_output_report_structure_dry_run() -> None:
@@ -259,6 +289,7 @@ def main() -> int:
         test_parses_input_artifacts,
         test_determinism_dry_run,
         test_todo_not_fabrication,
+        test_passing_checks_report_success,
         test_output_report_structure_dry_run,
     ]
 
