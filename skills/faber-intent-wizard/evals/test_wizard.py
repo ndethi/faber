@@ -7,6 +7,7 @@ Tests for the faber-intent-wizard skill.
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -297,6 +298,22 @@ class TestDeterminism:
         assert backlog1 == backlog2
 
 
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def plain_help(script: Path) -> subprocess.CompletedProcess:
+    """Run --help and return its output without rich styling or narrow wrapping."""
+    env = {**os.environ, "COLUMNS": "200", "TERMINAL_WIDTH": "200"}
+    result = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    result.stdout = ANSI_ESCAPE.sub("", result.stdout)
+    return result
+
+
 class TestGeneratedProjectStructure:
     """Tests for generated project structure (integration tests)."""
 
@@ -340,17 +357,36 @@ class TestGeneratedProjectStructure:
         assets_dir = SCRIPTS_DIR.parent / "assets" / "templates"
         assert assets_dir.exists()
 
+    def test_deploy_targets_template_is_accepted_by_generator(self):
+        """The shipped deploy targets template should work with --deploy-targets-file."""
+        template = SCRIPTS_DIR.parent / "assets" / "templates" / "deploy-targets.example.json"
+        targets = json.loads(template.read_text())
+        assert set(targets) == {"production", "staging"}
+        assert targets["production"]["branch"] == "main"
+        assert targets["staging"]["branch"] == "dev"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPTS_DIR / "generate_wizard.py"),
+                    "--project-name", "template-check",
+                    "--output-dir", tmpdir,
+                    "--deploy-targets-file", str(template),
+                    "--dry-run",
+                ],
+                capture_output=True,
+                text=True,
+            )
+        assert result.returncode == 0, result.stdout + result.stderr
+
 
 class TestCLIInterface:
     """Tests for CLI interfaces."""
 
     def test_generate_wizard_help(self):
         """generate_wizard.py should show help."""
-        result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "generate_wizard.py"), "--help"],
-            capture_output=True,
-            text=True,
-        )
+        result = plain_help(SCRIPTS_DIR / "generate_wizard.py")
         assert result.returncode == 0
         assert "Generate the complete intent wizard project" in result.stdout
         assert "--project-name" in result.stdout
