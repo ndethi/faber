@@ -11,6 +11,7 @@ Tests that the skill:
 6. Generates valid PR body
 """
 
+import importlib.util
 import json
 import subprocess
 import sys
@@ -82,8 +83,96 @@ def test_dedup_search() -> None:
     print("✓ Dedup search finds existing skills")
 
 
+def load_skill_author():
+    """Import skill_author.py so dedup can be tested against a fixture library."""
+    spec = importlib.util.spec_from_file_location(
+        "skill_author", "skills/skill-author/scripts/skill_author.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def write_fixture_skill(skills_dir: Path, name: str, description: str, body: str = "") -> None:
+    """Write a minimal SKILL.md into a fixture skill library."""
+    skill_dir = skills_dir / name
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        f"---\nname: {name}\ndescription: |\n  {description}\nversion: 1.0.0\n"
+        f"author: ndethi\nlicense: MIT\ntags: [\"fixture\"]\n---\n\n{body}\n"
+    )
+
+
+def test_dedup_ignores_common_and_body_words() -> None:
+    """Test that common words and SKILL.md boilerplate do not count as duplicates."""
+    author = load_skill_author()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        skills_dir = Path(tmpdir)
+        write_fixture_skill(skills_dir, "near-duplicate", "quantum entanglement simulation")
+        write_fixture_skill(
+            skills_dir,
+            "unrelated",
+            "generate invoices for the billing team",
+            body="Deterministic quantum entanglement simulation boilerplate for the skill.",
+        )
+
+        matches = author.search_existing_skills(
+            "quantum entanglement simulation for distributed consensus",
+            skills_dir=skills_dir,
+        )
+
+    assert [m["skill"] for m in matches] == ["near-duplicate"]
+    print("✓ Dedup ignores common words and body boilerplate")
+
+
+def test_dedup_requires_two_shared_words() -> None:
+    """Test that a single shared word is not treated as a duplicate."""
+    author = load_skill_author()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        skills_dir = Path(tmpdir)
+        write_fixture_skill(skills_dir, "one-word", "consensus voting ledger")
+
+        matches = author.search_existing_skills(
+            "quantum entanglement simulation for distributed consensus",
+            skills_dir=skills_dir,
+        )
+
+    assert matches == []
+    print("✓ Dedup requires two shared words")
+
+
+def test_dedup_flags_name_collision() -> None:
+    """Test that a matching name is flagged even when descriptions differ."""
+    author = load_skill_author()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        skills_dir = Path(tmpdir)
+        write_fixture_skill(skills_dir, "pr-review", "automated first pass checks")
+        write_fixture_skill(skills_dir, "pr-merge", "landing approved changes")
+
+        matches = author.search_existing_skills(
+            "pr-review-resolution fetch comments",
+            name="pr-review-resolution",
+            skills_dir=skills_dir,
+        )
+
+    assert [m["skill"] for m in matches] == ["pr-review"]
+    assert matches[0]["name_match"] is True
+    print("✓ Dedup flags name collisions")
+
+
+def test_dedup_finds_real_skill() -> None:
+    """Test that the real library still surfaces intent-collect for its own wording."""
+    author = load_skill_author()
+    matches = author.search_existing_skills(
+        "intent collect deterministic spec trajectory scope baseline"
+    )
+
+    assert "intent-collect" in [m["skill"] for m in matches]
+    print("✓ Dedup finds intent-collect in the real library")
+
+
 def test_new_skill_creation() -> None:
-    """Test creating a completely new skill (no dedup matches)."""
+    """Test creating a completely new skill."""
     with tempfile.TemporaryDirectory() as tmpdir:
         result = subprocess.run([
             sys.executable,
@@ -101,8 +190,6 @@ def test_new_skill_creation() -> None:
         output = json.loads(result.stdout.strip())
         assert output["status"] == "success"
         assert output["skill_name"] == "quantum-consensus"
-        # Should have low dedup matches (threshold allows for keyword overlap with existing skills)
-        assert output["dedup_matches"] <= 20, "Dedup search finds too many matches (expected with broad keyword overlap)"
 
         # Verify files created
         skill_path = Path(tmpdir) / "skills" / "quantum-consensus"
@@ -284,6 +371,10 @@ def main() -> None:
         test_script_exists_and_executable,
         test_script_help,
         test_dedup_search,
+        test_dedup_ignores_common_and_body_words,
+        test_dedup_requires_two_shared_words,
+        test_dedup_flags_name_collision,
+        test_dedup_finds_real_skill,
         test_new_skill_creation,
         test_generated_skill_structure,
         test_determinism,

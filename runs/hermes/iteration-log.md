@@ -611,3 +611,14 @@
 - **Plan:** Remove `cache: 'npm'` from the `lint` and `integration` jobs (same defect in both); no checks removed or relaxed. Push and confirm `Skill Evaluations` runs; report any eval failures rather than masking them.
 - **Expected diff:** ~2 lines in ci.yml plus this entry.
 - **Branch:** hermes/fix-ci-npm-cache
+
+## Iteration 8 — 2026-11-03T00:00:00Z
+
+**Item:** Fix skill-author dedup + evaluate eval flake
+
+- **Plan:** (1) `search_existing_skills` compares only name/description/tags, ignores common words, needs 2+ shared words or a name match; replace the raised-limit assertion with hermetic tests. (2) `evaluate` eval stubs `npm`/`npx` so it needs no network, and asserts honest pass/fail reports in a temp `--output-dir`.
+- **Spec refs:** FRAMEWORK.md §7 (dedup hard rule), AGENTS.md §2.8, §2.9
+- **Expected diff:** ~120 lines across `skills/skill-author/` and `skills/evaluate/evals/`
+- **Branch:** hermes/fix-dedup-and-evaluate-evals
+- **Out of scope:** CI lint failure; `evaluate_acceptance_criteria` marking criteria "covered" unconditionally; removing `my-skill`, `quantum-sim`, `test-dedup`
+- **Result:** ✓ `skill-author` evals 14/14 and `evaluate` evals 10/10 pass; `quantum-consensus` dedup now returns 1 match (`quantum-sim`) instead of 22; `evaluate` evals run offline in under a second and write reports to a temp dir

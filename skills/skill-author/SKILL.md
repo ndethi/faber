@@ -20,7 +20,8 @@ The canonical way to create new skills in the Faber framework. Enforces the
 governance loop from FRAMEWORK.md §7:
 
 1. **Trigger** — recurring pattern in `lessons.md`/feedback or capability gap
-2. **Dedup** — search existing skills first (no sprawl)
+2. **Dedup** — search existing skills first (no sprawl); a match needs 2+ shared
+   words in a skill's name/description/tags (common words ignored) or a name match
 3. **Draft** — SKILL.md + `scripts/` + `evals/` (skill contract)
 4. **Eval** — run eval, must pass
 5. **PR** — open with rationale + eval results
