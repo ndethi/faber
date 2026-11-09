@@ -622,3 +622,11 @@
 - **Branch:** hermes/fix-dedup-and-evaluate-evals
 - **Out of scope:** CI lint failure; `evaluate_acceptance_criteria` marking criteria "covered" unconditionally; removing `my-skill`, `quantum-sim`, `test-dedup`
 - **Result:** ✓ `skill-author` evals 14/14 and `evaluate` evals 10/10 pass; `quantum-consensus` dedup now returns 1 match (`quantum-sim`) instead of 22; `evaluate` evals run offline in under a second and write reports to a temp dir
+
+## 2026-11-09 — Get ci.yml green after the npm cache fix
+
+- **Spec:** AGENTS.md §2.8, §2.9, §11.1; FRAMEWORK.md §1 (`assets/` holds templates); `.github/workflows/ci.yml` (BG-007)
+- **Plan:** (1) Ship a real `assets/templates/deploy-targets.example.json` for `faber-intent-wizard` and test that it loads. (2) Normalise ANSI and wrapping in the help eval's output; the assertions stay. (3) `trace-missing-canonical` evals run the real `run.sh` against a temp bundle, and tracked canonical files are compared with a committed copy of `_inbox/CHECKSUMS.txt`. (4) Give the integration job the required intent-collect arguments and run scaffold for real, because `--dry-run` writes nothing and cannot produce `package.json`.
+- **Expected diff:** ~120 lines across two evals, one template, one checksum fixture and ci.yml.
+- **Branch:** hermes/fix-ci-eval-failures (includes PR 147 and PR 148, which it depends on)
+- **Out of scope:** tracked `.pyc` files; `ci-summary` ignoring integration failures; other workflows

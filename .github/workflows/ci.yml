@@ -146,20 +146,20 @@ jobs:
       - name: Run intent-collect on Rohaki fixture
         run: |
           python skills/intent-collect/scripts/intent_collect.py \
-            --input-dir fixtures/rohaki \
-            --output-dir /tmp/rohaki-intent \
-            --dry-run
+            --client-context "$(cat fixtures/rohaki/scope-baseline.md)" \
+            --production-context prototype \
+            --output-dir /tmp/rohaki-intent
 
       - name: Run scaffold on generated intent
         run: |
           python skills/scaffold/scripts/scaffold.py \
             --input-dir /tmp/rohaki-intent \
-            --output-dir /tmp/rohaki-scaffold \
-            --dry-run
+            --output-dir /tmp/rohaki-scaffold
 
       - name: Verify scaffold output
         run: |
           if [ -f /tmp/rohaki-scaffold/package.json ]; then
+            node -e "JSON.parse(require('fs').readFileSync('/tmp/rohaki-scaffold/package.json', 'utf8'))"
             echo "Scaffold produced package.json ✓"
           else
             echo "::error::Scaffold did not produce package.json"

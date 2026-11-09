@@ -3,9 +3,27 @@
 Trace Missing Canonical Skill Eval
 """
 
+import hashlib
 import subprocess
-import sys
 from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+RUN_SH = REPO_ROOT / "skills" / "trace-missing-canonical" / "run.sh"
+# Snapshot of the gitignored _inbox/CHECKSUMS.txt, so CI can check the shipped bundle's hashes.
+CHECKSUMS = Path(__file__).resolve().parent / "fixtures" / "CHECKSUMS.txt"
+CANONICAL_FILES = ["IDENTITY.md", "INTERFACE.md", "RUNBOOK.md"]
+
+
+def load_checksums() -> dict:
+    """Return {path: sha256} from the committed CHECKSUMS.txt snapshot."""
+    entries = {}
+    for line in CHECKSUMS.read_text().splitlines():
+        if line.strip():
+            digest, path = line.split(maxsplit=1)
+            entries[path] = digest
+    return entries
 
 
 def test_skill_structure():
@@ -24,61 +42,108 @@ def test_run_script_executable():
     print("✓ run.sh is executable")
 
 
-def test_run_script_no_critical_drift():
-    """Test that run.sh detects no critical drift (FRAMEWORK.md evolution is expected)."""
-    # Run the script
-    result = subprocess.run(
-        ["bash", "skills/trace-missing-canonical/run.sh"],
-        capture_output=True,
-        text=True,
-        cwd="."
-    )
-    
-    # The script should handle FRAMEWORK.md evolution gracefully (warn but not fail)
-    # and should pass for IDENTITY.md, INTERFACE.md, RUNBOOK.md
+def make_bundle(root: Path) -> Path:
+    """Create a repo with a matching _inbox/ bundle and CHECKSUMS.txt in root."""
+    inbox = root / "_inbox"
+    inbox.mkdir()
+    checksums = []
+    for name in CANONICAL_FILES + ["FRAMEWORK.md"]:
+        content = f"# {name}\ncanonical content\n"
+        (inbox / name).write_text(content)
+        (root / name).write_text(content)
+        checksums.append(f"{hashlib.sha256(content.encode()).hexdigest()}  {name}")
+    (inbox / "CHECKSUMS.txt").write_text("\n".join(checksums) + "\n")
+    return root
+
+
+def run_guard(cwd: Path) -> subprocess.CompletedProcess:
+    """Run the real run.sh against the bundle in cwd."""
+    return subprocess.run(["bash", str(RUN_SH)], capture_output=True, text=True, cwd=cwd)
+
+
+def test_run_script_passes_on_clean_bundle(tmp_path):
+    """Test that run.sh exits 0 when every canonical file matches."""
+    result = run_guard(make_bundle(tmp_path))
+    assert result.returncode == 0, result.stdout
+    assert "OK: no drift detected" in result.stdout
+
+
+def test_run_script_no_critical_drift(tmp_path):
+    """Test that an evolved FRAMEWORK.md is reported and the other files still match."""
+    make_bundle(tmp_path)
+    (tmp_path / "FRAMEWORK.md").write_text("# FRAMEWORK.md\nevolved\n")
+
+    result = run_guard(tmp_path)
+
     assert "OK: IDENTITY.md matches _inbox" in result.stdout
     assert "OK: INTERFACE.md matches _inbox" in result.stdout
     assert "OK: RUNBOOK.md matches _inbox" in result.stdout
-    
-    # FRAMEWORK.md may have evolved - that's OK, it should warn but not be critical
-    # The key is that the script runs and reports properly
+    assert "DRIFT DETECTED: FRAMEWORK.md" in result.stdout
     print("✓ run.sh executes and reports canonical file status correctly")
 
 
-def test_run_script_detects_drift():
-    """Test that run.sh detects drift when files differ."""
-    # Create a temporary file that differs from _inbox
-    import tempfile
-    
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Copy _inbox/IDENTITY.md to temp and modify it
-        test_file = Path(tmpdir) / "IDENTITY.md"
-        with open("_inbox/IDENTITY.md", "r") as f:
-            content = f.read()
-        with open(test_file, "w") as f:
-            f.write(content + "\n# MODIFIED - DRIFT!")
-        
-        # Run diff to verify it detects the change
-        result = subprocess.run(
-            ["diff", "-r", "_inbox/IDENTITY.md", str(test_file)],
-            capture_output=True,
-            text=True
-        )
-        assert result.returncode != 0, "diff should detect the modification"
-    
-    print("✓ run.sh would detect drift (verified via diff)")
+def test_run_script_detects_drift(tmp_path):
+    """Test that run.sh fails when a repo file differs from _inbox."""
+    make_bundle(tmp_path)
+    with open(tmp_path / "IDENTITY.md", "a") as f:
+        f.write("\n# MODIFIED - DRIFT!")
+
+    result = run_guard(tmp_path)
+
+    assert result.returncode != 0, result.stdout
+    assert "DRIFT DETECTED: IDENTITY.md" in result.stdout
+    assert "FAIL: drift detected" in result.stdout
+    print("✓ run.sh detects drift")
+
+
+def test_run_script_detects_missing_file(tmp_path):
+    """Test that run.sh fails when a canonical file is missing from the repo."""
+    make_bundle(tmp_path)
+    (tmp_path / "RUNBOOK.md").unlink()
+
+    result = run_guard(tmp_path)
+
+    assert result.returncode != 0, result.stdout
+    assert "MISSING IN REPO: RUNBOOK.md" in result.stdout
+
+
+def test_run_script_detects_checksum_mismatch(tmp_path):
+    """Test that run.sh fails when an _inbox file no longer matches CHECKSUMS.txt."""
+    make_bundle(tmp_path)
+    for location in (tmp_path / "_inbox", tmp_path):
+        (location / "INTERFACE.md").write_text("altered in both places\n")
+
+    result = run_guard(tmp_path)
+
+    assert result.returncode != 0, result.stdout
+    assert "CHECKSUM MISMATCH: _inbox/INTERFACE.md" in result.stdout
 
 
 def test_checksums_exist():
-    """Test that CHECKSUMS.txt exists in _inbox."""
-    assert Path("_inbox/CHECKSUMS.txt").exists(), "_inbox/CHECKSUMS.txt missing"
+    """Test that the committed CHECKSUMS.txt snapshot covers the canonical files."""
+    assert CHECKSUMS.exists(), f"{CHECKSUMS} missing"
+    assert set(CANONICAL_FILES) <= set(load_checksums())
     print("✓ CHECKSUMS.txt exists")
 
 
+def test_tracked_canonical_files_match_checksums():
+    """Test that the repo's canonical files still match the shipped bundle.
+
+    FRAMEWORK.md is left out because it is expected to evolve.
+    """
+    expected = load_checksums()
+    for name in CANONICAL_FILES:
+        actual = hashlib.sha256((REPO_ROOT / name).read_bytes()).hexdigest()
+        assert actual == expected[name], f"{name} has drifted from the shipped bundle"
+
+
+@pytest.mark.skipif(not (REPO_ROOT / "_inbox").exists(), reason="_inbox/ is gitignored and only exists locally")
+def test_real_inbox_has_no_critical_drift():
+    """Test the repo against the real _inbox/ bundle where one is present."""
+    result = run_guard(REPO_ROOT)
+    for name in CANONICAL_FILES:
+        assert f"OK: {name} matches _inbox" in result.stdout
+
+
 if __name__ == "__main__":
-    test_skill_structure()
-    test_run_script_executable()
-    test_run_script_no_critical_drift()
-    test_run_script_detects_drift()
-    test_checksums_exist()
-    print("\n✓ All trace-missing-canonical evals passed")
+    raise SystemExit(pytest.main([__file__, "-v"]))

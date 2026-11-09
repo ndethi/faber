@@ -1,0 +1,4 @@
+{
+  "production": { "domain": "intent.example.com", "branch": "main" },
+  "staging": { "domain": "dev-intent.example.com", "branch": "dev" }
+}
