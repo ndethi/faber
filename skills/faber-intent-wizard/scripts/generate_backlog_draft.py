@@ -57,11 +57,18 @@ def extract_facts(client_context: str) -> Dict[str, str]:
 
     if "constraint" in ctx_lower or "limit" in ctx_lower:
         for line in client_context.split('\\n'):
-            if 'constraint:' in line.lower() or 'limit:' in line.lower():
+            if any(k in line.lower() for k in ('constraint:', 'constraints:', 'limit:')):
                 parts = line.split(':', 1)
                 if len(parts) > 1:
                     constraints = parts[1].strip()
                     break
+
+    for line in client_context.split('\\n'):
+        if line.lower().replace(' ', '').startswith(('non-goals:', 'nongoals:')):
+            parts = line.split(':', 1)
+            if parts[1].strip():
+                facts["non_goals"] = parts[1].strip()
+            break
 
     if goal:
         facts["goal"] = goal
@@ -103,9 +110,9 @@ def elicit_gaps(client_context: str, facts: Dict[str, str]) -> List[str]:
 
 def generate_spec(client_context: str, facts: Dict[str, str], gaps: List[str]) -> str:
     \"\"\"Generate spec.md with IDed acceptance criteria (mirrors intent-collect logic).\"\"\"
-    goal = facts.get("goal", "Build a website")
-    audience = facts.get("audience", "Target audience")
-    constraints = facts.get("constraints", "Brand guidelines")
+    goal = facts.get("goal", "TODO: goal not stated in brief")
+    audience = facts.get("audience", "TODO: audience not stated in brief")
+    constraints = facts.get("constraints", "TODO: constraints not stated in brief")
 
     spec = f\"\"\"# Spec
 
@@ -113,7 +120,7 @@ def generate_spec(client_context: str, facts: Dict[str, str], gaps: List[str]) -
 {client_context.strip()}
 - Goal: {goal}
 - Audience: {audience}
-- Non-goals: None specified
+- Non-goals: {facts.get('non_goals', 'TODO: non-goals not stated in brief')}
 - Constraints: {constraints}
 
 ## Acceptance Criteria
@@ -176,9 +183,9 @@ def generate_trajectory(production_context: str = "normal") -> str:
 
 def generate_scope_baseline(client_context: str, facts: Dict[str, str]) -> str:
     \"\"\"Generate scope-baseline.md - plain language, client-shareable.\"\"\"
-    goal = facts.get("goal", "Build a website")
-    audience = facts.get("audience", "Target audience")
-    constraints = facts.get("constraints", "Brand guidelines")
+    goal = facts.get("goal", "TODO: goal not stated in brief")
+    audience = facts.get("audience", "TODO: audience not stated in brief")
+    constraints = facts.get("constraints", "TODO: constraints not stated in brief")
 
     scope = f\"\"\"# Scope Baseline
 
@@ -187,7 +194,7 @@ Derived from the provided context.
 {client_context.strip()}
 - Goal: {goal}
 - Audience: {audience}
-- Non-goals: None specified
+- Non-goals: {facts.get('non_goals', 'TODO: non-goals not stated in brief')}
 - Constraints: {constraints}
 
 TODO: Review with client.
@@ -202,7 +209,7 @@ def generate_backlog_draft(
     fixture: str = "{fixture}"
 ) -> str:
     \"\"\"Generate GitHub issue-ready backlog draft markdown.\"\"\"
-    goal = facts.get("goal", "Build a website")
+    goal = facts.get("goal", "TODO: goal not stated in brief")
 
     # Extract SPEC items from spec
     spec_lines = spec.split("\\n")
@@ -219,8 +226,8 @@ def generate_backlog_draft(
 
 ### Functional Requirements
 - [ ] Implement core functionality for: {goal}
-- [ ] Support target audience: {facts.get('audience', 'TBD')}
-- [ ] Meet constraints: {facts.get('constraints', 'TBD')}
+- [ ] Support target audience: {facts.get('audience', 'TODO: audience not stated in brief')}
+- [ ] Meet constraints: {facts.get('constraints', 'TODO: constraints not stated in brief')}
 
 ### Technical Requirements
 - [ ] Astro + Cloudflare Pages setup
@@ -325,6 +332,7 @@ if __name__ == "__main__":
 if __name__ == "__main__":
     # When run directly, execute the script logic
     import argparse
+    import json
     import sys
     from pathlib import Path
 
@@ -389,11 +397,18 @@ if __name__ == "__main__":
 
         if "constraint" in ctx_lower or "limit" in ctx_lower:
             for line in client_context.split('\n'):
-                if 'constraint:' in line.lower() or 'limit:' in line.lower():
+                if any(k in line.lower() for k in ('constraint:', 'constraints:', 'limit:')):
                     parts = line.split(':', 1)
                     if len(parts) > 1:
                         constraints = parts[1].strip()
                         break
+
+        for line in client_context.split('\n'):
+            if line.lower().replace(' ', '').startswith(('non-goals:', 'nongoals:')):
+                parts = line.split(':', 1)
+                if parts[1].strip():
+                    facts["non_goals"] = parts[1].strip()
+                break
 
         if goal:
             facts["goal"] = goal
@@ -431,9 +446,9 @@ if __name__ == "__main__":
         return gaps
 
     def generate_spec(client_context: str, facts, gaps):
-        goal = facts.get("goal", "Build a website")
-        audience = facts.get("audience", "Target audience")
-        constraints = facts.get("constraints", "Brand guidelines")
+        goal = facts.get("goal", "TODO: goal not stated in brief")
+        audience = facts.get("audience", "TODO: audience not stated in brief")
+        constraints = facts.get("constraints", "TODO: constraints not stated in brief")
 
         spec = f"""# Spec
 
@@ -441,7 +456,7 @@ if __name__ == "__main__":
 {client_context.strip()}
 - Goal: {goal}
 - Audience: {audience}
-- Non-goals: None specified
+- Non-goals: {facts.get('non_goals', 'TODO: non-goals not stated in brief')}
 - Constraints: {constraints}
 
 ## Acceptance Criteria
@@ -500,9 +515,9 @@ if __name__ == "__main__":
         return trajectory
 
     def generate_scope_baseline(client_context: str, facts):
-        goal = facts.get("goal", "Build a website")
-        audience = facts.get("audience", "Target audience")
-        constraints = facts.get("constraints", "Brand guidelines")
+        goal = facts.get("goal", "TODO: goal not stated in brief")
+        audience = facts.get("audience", "TODO: audience not stated in brief")
+        constraints = facts.get("constraints", "TODO: constraints not stated in brief")
 
         scope = f"""# Scope Baseline
 
@@ -511,7 +526,7 @@ Derived from the provided context.
 {client_context.strip()}
 - Goal: {goal}
 - Audience: {audience}
-- Non-goals: None specified
+- Non-goals: {facts.get('non_goals', 'TODO: non-goals not stated in brief')}
 - Constraints: {constraints}
 
 TODO: Review with client.
@@ -519,7 +534,7 @@ TODO: Review with client.
         return scope
 
     def generate_backlog_draft(client_context: str, facts, spec, fixture):
-        goal = facts.get("goal", "Build a website")
+        goal = facts.get("goal", "TODO: goal not stated in brief")
 
         spec_lines = spec.split("\n")
         spec_items = [line.strip() for line in spec_lines if line.strip().startswith("- SPEC-")]
@@ -533,8 +548,8 @@ TODO: Review with client.
 
 ### Functional Requirements
 - [ ] Implement core functionality for: {goal}
-- [ ] Support target audience: {facts.get('audience', 'TBD')}
-- [ ] Meet constraints: {facts.get('constraints', 'TBD')}
+- [ ] Support target audience: {facts.get('audience', 'TODO: audience not stated in brief')}
+- [ ] Meet constraints: {facts.get('constraints', 'TODO: constraints not stated in brief')}
 
 ### Technical Requirements
 - [ ] Astro + Cloudflare Pages setup
