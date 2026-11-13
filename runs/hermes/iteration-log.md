@@ -603,3 +603,15 @@
 - **Result:** ✓ Extended `skills/faber-cms/` with admin UI generation (scripts + evals); ✓ `generate_admin_ui.py` main entry with Typer CLI (--project-name, --output-dir, --worker-url, --fixture); ✓ 4 script modules (generate_admin_ui, generate_admin_routes, generate_admin_components, generate_admin_api_client); ✓ Generated complete Astro admin UI with Dashboard, Content List, Content Editor, Settings pages; ✓ Reusable components (Sidebar, Header, ContentTable, ContentForm, Modal, Toast); ✓ TypeScript API client with typed fetch wrappers; ✓ Design system tokens applied; ✓ 23 evals pass (18 Iteration A + 5 Iteration B); ✓ Deterministic byte-for-byte output verified; ✓ Registry entry updated to `skill.faber-cms@1.1.0`
 - **Diff:** ~1,200 lines across scripts/, evals/, assets/ (Iteration B) + SKILL.md updates
 - **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit, BG-010 AGENTS/FRAMEWORK alignment
+
+## 2026-11-13 — fix(faber-intent-wizard): stop inventing client intent
+
+- **Spec ref:** AGENTS.md §2.9 (no fabrication); skill `faber-intent-wizard`; mirrors the `intent-collect` fix on `hermes/fix-intent-collect-fabrication`.
+- **Plan:**
+  1. `scripts/generate_backlog_draft.py` (generated script + direct-run copy): replace `"Build a website"`, `"Target audience"`, `"Brand guidelines"`, `"TBD"` and `"Non-goals: None specified"` with `TODO: <field> not stated in brief`; extract `Non-goals:` when the brief states it.
+  2. `scripts/generate_telegram_handler.py` (generated TS): same replacements; read non-goals from extracted facts (the old `data.non_goals` was out of scope in `generateSpec`/`generateScopeBaseline`).
+  3. `evals/test_wizard.py`: evals that run a brief with no stated facts and fail if any invented default appears, and that stated facts pass through unchanged.
+- **Expected diff:** ~80–120 lines across 2 scripts + 1 eval file.
+- **Branch:** hermes/fix-intent-wizard-fabrication → PR to `dev`, no auto-merge.
+- **Result:** ✓ No invented goal/audience/constraints/non-goals in either script; empty brief yields `TODO: <field> not stated in brief` in spec, scope baseline and backlog; stated `Non-goals:` and `Constraints:` now extracted; ✓ 11 new evals in `TestNoInventedIntent` (all fail on `dev`, pass here); 40/41 wizard evals pass — `test_assets_directory_exists` fails on `dev` too (handled in PR #149). Also added the missing `import json` to the direct-run `--json` path, which crashed on `dev`.
+- **Not fixed (pre-existing, separate PRs):** `generate_backlog_draft_script()` and `generate_intent_api()` raise on `str.format` (unescaped braces), so neither template renders; the wizard evals still import `intent_collect` rather than wizard code for spec/scope tests.

@@ -73,6 +73,10 @@ function extractFacts(clientContext: string): Record<string, string> {{
   const constraintsMatch = clientContext.match(/Constraints:\\s*([^\\n]+)/i);
   if (constraintsMatch) facts.constraints = constraintsMatch[1].trim();
 
+  // Non-goals extraction (left unset when not stated; never defaulted)
+  const nonGoalsMatch = clientContext.match(/Non-?goals:[ \\t]*([^\\n]+)/i);
+  if (nonGoalsMatch && nonGoalsMatch[1].trim()) facts.non_goals = nonGoalsMatch[1].trim();
+
   return facts;
 }}
 
@@ -112,9 +116,9 @@ function elicitGaps(clientContext: string, facts: Record<string, string>): strin
 
 // Generate spec.md (mirrors intent-collect logic)
 function generateSpec(clientContext: string, facts: Record<string, string>, gaps: string[]): string {{
-  const goal = facts.goal || "Build a website";
-  const audience = facts.audience || "Target audience";
-  const constraints = facts.constraints || "Brand guidelines";
+  const goal = facts.goal || "TODO: goal not stated in brief";
+  const audience = facts.audience || "TODO: audience not stated in brief";
+  const constraints = facts.constraints || "TODO: constraints not stated in brief";
 
   let spec = `# Spec
 
@@ -122,7 +126,7 @@ function generateSpec(clientContext: string, facts: Record<string, string>, gaps
 ${{clientContext}}
 - Goal: ${{goal}}
 - Audience: ${{audience}}
-- Non-goals: ${{data.non_goals || "None specified"}}
+- Non-goals: ${{facts.non_goals || "TODO: non-goals not stated in brief"}}
 - Constraints: ${{constraints}}
 
 ## Acceptance Criteria
@@ -181,9 +185,9 @@ ${{trajectorySteps.join("\\n")}}
 
 // Generate scope-baseline.md (mirrors intent-collect logic)
 function generateScopeBaseline(clientContext: string, facts: Record<string, string>): string {{
-  const goal = facts.goal || "Build a website";
-  const audience = facts.audience || "Target audience";
-  const constraints = facts.constraints || "Brand guidelines";
+  const goal = facts.goal || "TODO: goal not stated in brief";
+  const audience = facts.audience || "TODO: audience not stated in brief";
+  const constraints = facts.constraints || "TODO: constraints not stated in brief";
 
   return `# Scope Baseline
 
@@ -192,7 +196,7 @@ Derived from the provided context.
 ${{clientContext}}
 - Goal: ${{goal}}
 - Audience: ${{audience}}
-- Non-goals: ${{data.non_goals || "None specified"}}
+- Non-goals: ${{facts.non_goals || "TODO: non-goals not stated in brief"}}
 - Constraints: ${{constraints}}
 
 TODO: Review with client.
@@ -201,7 +205,7 @@ TODO: Review with client.
 
 // Generate backlog draft markdown
 function generateBacklogDraft(clientContext: string, facts: Record<string, string>, spec: string): string {{
-  const goal = facts.goal || "Build a website";
+  const goal = facts.goal || "TODO: goal not stated in brief";
 
   return `# Backlog Draft — Generated from Intent #${{Date.now()}}
 
@@ -211,8 +215,8 @@ function generateBacklogDraft(clientContext: string, facts: Record<string, strin
 
 ### Functional Requirements
 - [ ] Implement core functionality for: ${{goal}}
-- [ ] Support target audience: ${{facts.audience || "TBD"}}
-- [ ] Meet constraints: ${{facts.constraints || "TBD"}}
+- [ ] Support target audience: ${{facts.audience || "TODO: audience not stated in brief"}}
+- [ ] Meet constraints: ${{facts.constraints || "TODO: constraints not stated in brief"}}
 
 ### Technical Requirements
 - [ ] Astro + Cloudflare Pages setup
