@@ -187,6 +187,88 @@ def test_production_context_mapping() -> None:
                 
     print("✓ Production context mapping test passed")
 
+def run_intent_collect(client_context: str, tmpdir: str) -> dict:
+    """Run the skill and return its JSON summary plus the generated files."""
+    result = subprocess.run([
+        sys.executable,
+        "skills/intent-collect/scripts/intent_collect.py",
+        "--client-context", client_context,
+        "--production-context", "normal",
+        "--output-dir", tmpdir
+    ], capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, f"Script failed: {result.stderr}"
+    output = json.loads(result.stdout)
+    output["spec"] = (Path(tmpdir) / "spec.md").read_text()
+    output["scope"] = (Path(tmpdir) / "scope-baseline.md").read_text()
+    return output
+
+INVENTED_TEXT = [
+    "Mobile app", "Brand guidelines", "Marketing team", "Build a website",
+    "PCI", "versioning", "responsive", "security best practices",
+]
+
+def test_one_line_brief_keeps_client_facts() -> None:
+    """Test that fields on one line stay separate and the client's words are kept."""
+    brief = (
+        "Goal: Attract restoration funders. Audience: Institutional donors. "
+        "Non-goals: e-commerce. Pages: Home, Impact, and Contact. "
+        "Constraints: Every impact figure needs a source."
+    )
+    with tempfile.TemporaryDirectory() as tmpdir:
+        output = run_intent_collect(brief, tmpdir)
+
+    facts = output["extracted_facts"]
+    assert facts["goal"] == "Attract restoration funders"
+    assert facts["audience"] == "Institutional donors"
+    assert facts["non_goals"] == "e-commerce"
+    assert facts["constraints"] == "Every impact figure needs a source"
+
+    for artifact in (output["spec"], output["scope"]):
+        assert "- Non-goals: e-commerce" in artifact
+        for invented in INVENTED_TEXT:
+            assert invented not in artifact, f"Invented text in artifact: {invented}"
+
+    for page in ("Home", "Impact", "Contact"):
+        assert f"The site shall include the page: {page}\n" in output["spec"]
+    assert "constraint: Every impact figure needs a source" in output["spec"]
+    print("✓ One-line brief keeps client facts")
+
+def test_multi_line_brief_with_bullets() -> None:
+    """Test that a bulleted brief is read item by item and stops at other labels."""
+    brief = "Goal: Sell tickets\nPages:\n- Home\n- Events\nBudget: 500\n\nUsers: Fans"
+    with tempfile.TemporaryDirectory() as tmpdir:
+        output = run_intent_collect(brief, tmpdir)
+
+    assert "page: Home\n" in output["spec"]
+    assert "page: Events\n" in output["spec"]
+    assert "Budget" not in output["extracted_facts"]["information_architecture"]
+    assert output["extracted_facts"]["audience"] == "Fans"
+    print("✓ Multi-line brief parsed by item")
+
+def test_empty_brief_invents_nothing() -> None:
+    """Test that a brief with no stated facts yields only TODOs."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        output = run_intent_collect("We would like some help online.", tmpdir)
+
+    assert output["extracted_facts"] == {}
+    assert len(output["elicited_gaps"]) == 7
+    for artifact in (output["spec"], output["scope"]):
+        for field in ("Goal", "Audience", "Non-goals", "Constraints"):
+            assert f"- {field}: TODO:" in artifact, f"{field} must be TODO"
+        for invented in INVENTED_TEXT:
+            assert invented not in artifact, f"Invented text in artifact: {invented}"
+    print("✓ Empty brief invents nothing")
+
+def test_keywords_do_not_add_requirements() -> None:
+    """Test that a word in passing cannot add a templated requirement."""
+    brief = "Goal: Promote our pottery workshop and its blog. Audience: Locals."
+    with tempfile.TemporaryDirectory() as tmpdir:
+        output = run_intent_collect(brief, tmpdir)
+
+    assert "PCI" not in output["spec"]
+    assert "admin interface" not in output["spec"]
+    print("✓ Keywords do not add requirements")
+
 def main() -> None:
     tests = [
         test_skill_md_exists,
@@ -196,6 +278,10 @@ def main() -> None:
         test_determinism,
         test_todo_not_fabrication,
         test_production_context_mapping,
+        test_one_line_brief_keeps_client_facts,
+        test_multi_line_brief_with_bullets,
+        test_empty_brief_invents_nothing,
+        test_keywords_do_not_add_requirements,
     ]
     
     passed = 0

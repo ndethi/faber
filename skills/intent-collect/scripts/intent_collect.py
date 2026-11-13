@@ -12,6 +12,7 @@ Produces:
 """
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,6 +28,32 @@ ELICITATION_QUESTIONS = [
     "What constraints exist (brand, legal, technical, temporal)?",
     "What are the success metrics or acceptance criteria?",
 ]
+
+# Labels that identify each field in a brief, in ELICITATION_QUESTIONS order
+FIELD_LABELS = {
+    "goal": ["goal", "goals", "objective", "objectives"],
+    "audience": ["audience", "audiences", "users", "user"],
+    "non_goals": ["non-goals", "non-goal", "non goals", "out of scope"],
+    "information_architecture": ["pages", "sitemap", "information architecture"],
+    "content_model": ["content model"],
+    "constraints": ["constraints", "constraint", "limits", "limit"],
+    "success_metrics": ["success metrics", "metrics", "success criteria", "acceptance criteria"],
+}
+
+UNKNOWN = "TODO: not stated in client context"
+
+LABEL_TO_FIELD = {
+    label: field for field, labels in FIELD_LABELS.items() for label in labels
+}
+# Longest first, so "non-goals" is never read as "goals"
+LABEL_RE = re.compile(
+    r"(?<![\w-])("
+    + "|".join(re.escape(l) for l in sorted(LABEL_TO_FIELD, key=len, reverse=True))
+    + r")\s*:",
+    re.IGNORECASE,
+)
+# A value also ends at a blank line, a heading, or a line with some other label
+VALUE_BREAK_RE = re.compile(r"\n\s*\n|\n\s*#|\n\s*[-*]?\s*[A-Z][\w /-]{0,30}:")
 
 # Lifecycle stages in order (per FRAMEWORK.md §2)
 LIFECYCLE_STAGES = [
@@ -44,110 +71,84 @@ LIFECYCLE_STAGES = [
 CHECKPOINTS = ["HITL confirmation", "spec review", "trajectory review"]
 
 def extract_facts(client_context: str) -> Dict[str, str]:
-    """Extract known facts from client context (don't re-ask what's answered)."""
-    facts = {}
-    ctx_lower = client_context.lower()
-    
-    # Simple keyword extraction - returns None for unknowns so caller can use defaults
-    # In practice this could be more sophisticated (LLM-based extraction)
-    goal = None
-    audience = None
-    constraints = None
-    
-    if "goal" in ctx_lower or "objective" in ctx_lower:
-        # Extract what comes after "goal:" or "objective:"
-        for line in client_context.split('\n'):
-            if 'goal:' in line.lower() or 'objective:' in line.lower():
-                parts = line.split(':', 1)
-                if len(parts) > 1:
-                    goal = parts[1].strip()
-                    break
-    
-    if "audience" in ctx_lower or "user" in ctx_lower:
-        for line in client_context.split('\n'):
-            if 'audience:' in line.lower() or 'user:' in line.lower():
-                parts = line.split(':', 1)
-                if len(parts) > 1:
-                    audience = parts[1].strip()
-                    break
-    
-    if "constraint" in ctx_lower or "limit" in ctx_lower:
-        for line in client_context.split('\n'):
-            if 'constraint:' in line.lower() or 'limit:' in line.lower():
-                parts = line.split(':', 1)
-                if len(parts) > 1:
-                    constraints = parts[1].strip()
-                    break
-    
-    # Only add to facts if we actually extracted something
-    if goal:
-        facts["goal"] = goal
-    if audience:
-        facts["audience"] = audience
-    if constraints:
-        facts["constraints"] = constraints
-    
+    """Extract labelled facts from client context; unlabelled fields stay absent."""
+    facts: Dict[str, str] = {}
+    matches = list(LABEL_RE.finditer(client_context))
+
+    for i, match in enumerate(matches):
+        value_end = matches[i + 1].start() if i + 1 < len(matches) else len(client_context)
+        value = client_context[match.end():value_end]
+        value_break = VALUE_BREAK_RE.search(value)
+        if value_break:
+            value = value[:value_break.start()]
+        value = value.strip(" \t\r\n-*.;,")
+        if value and not value.lower().startswith("todo"):
+            facts.setdefault(LABEL_TO_FIELD[match.group(1).lower()], value)
+
     return facts
 
 def elicit_gaps(client_context: str, facts: Dict[str, str]) -> List[str]:
-    """Elicit gaps via fixed question set, returning unanswered items."""
-    gaps = []
-    ctx_lower = client_context.lower()
-    
-    for i, question in enumerate(ELICITATION_QUESTIONS, 1):
-        # Simple heuristic: check if keywords from question appear in context
-        q_lower = question.lower()
-        # Extract key nouns/verbs (words longer than 3 chars, not common stop words)
-        words = [word.strip('.,?!()') for word in q_lower.split() 
-                if len(word) > 3 and word not in {'what', 'the', 'and', 'or', 'for', 'are', 'is', 'was', 'were', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'to', 'of', 'in', 'on', 'at', 'by'}]
-        if not words:  # fallback if all words filtered out
-            words = ['goal', 'audience', 'scope', 'structure', 'model', 'constraints', 'metrics']
-        
-        if not any(word in ctx_lower for word in words):
-            gaps.append(f"{i}. {question}")
-            
-    return gaps
+    """Return each fixed question whose field was not found in the context."""
+    return [
+        f"{i}. {question}"
+        for i, (field, question) in enumerate(zip(FIELD_LABELS, ELICITATION_QUESTIONS), 1)
+        if field not in facts
+    ]
+
+def split_items(value: str, split_commas: bool = False) -> List[str]:
+    """Split a stated value into list items, dropping bullets and punctuation."""
+    pattern = r"[;,\n]" if split_commas else r"[;\n]"
+    items = (item.strip(" \t\r-*.") for item in re.split(pattern, value))
+    return [re.sub(r"^and\s+", "", item, flags=re.IGNORECASE) for item in items if item]
+
+def generate_criteria(facts: Dict[str, str]) -> List[str]:
+    """Build acceptance criteria only from what the client actually stated."""
+    criteria = [
+        f"The system shall support the primary goal: {facts.get('goal', UNKNOWN)}",
+        f"The system shall serve the target audience: {facts.get('audience', UNKNOWN)}",
+    ]
+    if "information_architecture" in facts:
+        criteria += [
+            f"The site shall include the page: {page}"
+            for page in split_items(facts["information_architecture"], split_commas=True)
+        ]
+    if "constraints" in facts:
+        criteria += [
+            f"The system shall meet the constraint: {constraint}"
+            for constraint in split_items(facts["constraints"])
+        ]
+    if "success_metrics" in facts:
+        criteria += [
+            f"The system shall meet the success measure: {metric}"
+            for metric in split_items(facts["success_metrics"])
+        ]
+    return [f"- SPEC-{i:02d}: {criterion}" for i, criterion in enumerate(criteria, 1)]
+
+def render_context(client_context: str, facts: Dict[str, str]) -> str:
+    """Render the brief followed by the fields read from it."""
+    return f"""{client_context.strip()}
+- Goal: {facts.get("goal", UNKNOWN)}
+- Audience: {facts.get("audience", UNKNOWN)}
+- Non-goals: {facts.get("non_goals", UNKNOWN)}
+- Constraints: {facts.get("constraints", UNKNOWN)}"""
 
 def generate_spec(client_context: str, facts: Dict[str, str], gaps: List[str]) -> str:
     """Generate spec.md with IDed acceptance criteria."""
-    # Extract or default values
-    goal = facts.get("goal", "Build a website")  # default from fixture
-    audience = facts.get("audience", "Marketing team")
-    constraints = facts.get("constraints", "Brand guidelines")
-   
     spec = f"""# Spec
 
 ## Context
-{client_context.strip()}
-- Goal: {goal}
-- Audience: {audience}
-- Non-goals: Mobile app
-- Constraints: {constraints}
+{render_context(client_context, facts)}
 
 ## Acceptance Criteria
 """
-    
-    # Generate at least 2 IDed acceptance criteria based on context
-    spec += f"- SPEC-01: The system shall support the primary goal: {goal}\n"
-    spec += f"- SPEC-02: The system shall serve the target audience: {audience}\n"
-    
-    # Add more specific criteria if we detect domains
-    if "blog" in client_context.lower() or "cms" in client_context.lower():
-        spec += "- SPEC-03: Content shall be editable via admin interface\n"
-        spec += "- SPEC-04: Content shall support versioning\n"
-    elif "ecommerce" in client_context.lower() or "shop" in client_context.lower():
-        spec += "- SPEC-03: Product catalog shall support search and filtering\n"
-        spec += "- SPEC-04: Checkout process shall be PCI compliant\n"
-    else:
-        spec += "- SPEC-03: System shall be responsive and accessible\n"
-        spec += "- SPEC-04: System shall follow security best practices\n"
-    
+    spec += "\n".join(generate_criteria(facts)) + "\n"
+
     # Surface gaps as TODO items (per non-fabrication rule)
     if gaps:
         spec += "\n## TODO (Elicited Gaps)\n"
         for gap in gaps:
             spec += f"- TODO: {gap}\n"
-      
+
     return spec
 
 def generate_trajectory(production_context: str) -> str:
@@ -179,24 +180,14 @@ def generate_trajectory(production_context: str) -> str:
 
 def generate_scope_baseline(client_context: str, facts: Dict[str, str]) -> str:
     """Generate scope-baseline.md - plain language, client-shareable."""
-    # Extract or default values
-    goal = facts.get("goal", "Build a website")
-    audience = facts.get("audience", "Marketing team") 
-    constraints = facts.get("constraints", "Brand guidelines")
-    
-    scope = f"""# Scope Baseline
+    return f"""# Scope Baseline
 
 Derived from the provided context.
 
-{client_context.strip()}
-- Goal: {goal}
-- Audience: {audience}
-- Non-goals: Mobile app
-- Constraints: {constraints}
+{render_context(client_context, facts)}
 
 TODO: Review with client.
 """
-    return scope
 
 def write_files(spec: str, trajectory: str, scope: str, output_dir: str = ".") -> None:
     """Write the three output files."""
