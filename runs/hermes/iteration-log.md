@@ -603,3 +603,10 @@
 - **Result:** ✓ Extended `skills/faber-cms/` with admin UI generation (scripts + evals); ✓ `generate_admin_ui.py` main entry with Typer CLI (--project-name, --output-dir, --worker-url, --fixture); ✓ 4 script modules (generate_admin_ui, generate_admin_routes, generate_admin_components, generate_admin_api_client); ✓ Generated complete Astro admin UI with Dashboard, Content List, Content Editor, Settings pages; ✓ Reusable components (Sidebar, Header, ContentTable, ContentForm, Modal, Toast); ✓ TypeScript API client with typed fetch wrappers; ✓ Design system tokens applied; ✓ 23 evals pass (18 Iteration A + 5 Iteration B); ✓ Deterministic byte-for-byte output verified; ✓ Registry entry updated to `skill.faber-cms@1.1.0`
 - **Diff:** ~1,200 lines across scripts/, evals/, assets/ (Iteration B) + SKILL.md updates
 - **Next:** BG-006 _inbox/ & build-plan, BG-007 CI workflow, BG-009 eval audit, BG-010 AGENTS/FRAMEWORK alignment
+
+## Iteration 9 - intent-collect must not invent client intent
+- **Spec:** AGENTS.md 2.9 (no fabrication); skills/intent-collect/SKILL.md (unknowns are `TODO:`)
+- **Plan:** Parse labelled fields anywhere in the brief, including several on one line. Replace the default goal, audience, non-goals and constraints with `TODO:`. Build acceptance criteria only from stated facts, dropping the keyword-triggered templates. Decide gaps from extracted fields, not loose word matches. Add evals using a real-shaped one-line brief and an empty brief.
+- **Expected diff:** ~200 lines across scripts/intent_collect.py and evals/test_intent_collect.py
+- **Branch:** hermes/fix-intent-collect-fabrication
+- **Out of scope:** the same defaults in skills/faber-intent-wizard (separate change)

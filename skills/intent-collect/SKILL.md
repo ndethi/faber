@@ -41,6 +41,7 @@ The skill passes when:
 - trajectory.md strictness matches production_context mapping
 - Two runs on identical inputs yield identical file structure (determinism)
 - Unknowns appear as `TODO:`, never fabricated details
+- Acceptance criteria come only from facts stated in client_context
 
 ## Determinism & HITL
 - **Determinism**: File structure and section headers are deterministic given same inputs
